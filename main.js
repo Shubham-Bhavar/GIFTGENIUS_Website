@@ -717,20 +717,426 @@ const KeyboardNav = (() => {
 })();
 
 /* ═══════════════════════════════════
+   ENTRY ANIMATION — Gift Box
+═══════════════════════════════════ */
+const EntryAnimation = (() => {
+  const STORAGE_KEY = 'gg-entry-shown';
+  const CONFETTI_COLORS = ['#D4AF37','#6EC6CF','#FFA726','#fff','#4FB3BF','#FFD700','#a8f0f5','#ffd93d','#B8791A'];
+
+  function createConfetti() {
+    const container = document.getElementById('confettiContainer');
+    if (!container) return;
+    for (let i = 0; i < 80; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.cssText = `
+        left: ${Math.random() * 100}%;
+        background: ${CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]};
+        width: ${Math.random() * 10 + 5}px;
+        height: ${Math.random() * 10 + 5}px;
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+        animation-duration: ${Math.random() * 2 + 2}s;
+        animation-delay: ${Math.random() * 1.5}s;
+        transform: rotate(${Math.random() * 360}deg);
+      `;
+      container.appendChild(piece);
+    }
+  }
+
+  function createFireworks() {
+    const container = document.getElementById('fireworkContainer');
+    if (!container) return;
+    const positions = [
+      { x: 20, y: 25 }, { x: 80, y: 20 }, { x: 15, y: 70 },
+      { x: 85, y: 65 }, { x: 50, y: 15 }, { x: 50, y: 80 }
+    ];
+    positions.forEach((pos, i) => {
+      setTimeout(() => {
+        const burst = document.createElement('div');
+        const size = Math.random() * 120 + 80;
+        burst.className = 'firework-burst';
+        burst.style.cssText = `
+          left: ${pos.x}%;
+          top: ${pos.y}%;
+          width: ${size}px;
+          height: ${size}px;
+          margin: -${size/2}px;
+          border: 3px solid ${CONFETTI_COLORS[i % CONFETTI_COLORS.length]};
+          box-shadow: 0 0 20px ${CONFETTI_COLORS[i % CONFETTI_COLORS.length]};
+          animation-duration: 0.9s;
+          animation-delay: 0s;
+        `;
+        container.appendChild(burst);
+        setTimeout(() => burst.remove(), 1000);
+      }, i * 250);
+    });
+  }
+
+  function openGift() {
+    const scene   = document.getElementById('giftBoxScene');
+    const brand   = document.getElementById('entryBrand');
+    const overlay = document.getElementById('entryOverlay');
+    const cartoon = document.getElementById('cartoonPopup');
+    if (!scene) return;
+
+    // 1. Lid opens
+    scene.classList.add('opening');
+    createConfetti();
+
+    // 2. Cartoon pops out of box with "Hi!" bubble
+    setTimeout(() => {
+      if (cartoon) cartoon.classList.add('popped');
+    }, 550);
+
+    // 3. Brand text fades in + fireworks
+    setTimeout(() => {
+      if (brand) brand.classList.add('visible');
+      createFireworks();
+    }, 1000);
+
+    // 4. Overlay fades out
+    setTimeout(() => {
+      if (overlay) overlay.classList.add('fade-out');
+      setTimeout(() => {
+        if (overlay) overlay.remove();
+      }, 950);
+    }, 3400);
+
+    try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch (_) {}
+  }
+
+  function init() {
+    const overlay = document.getElementById('entryOverlay');
+    if (!overlay) return;
+
+    // Check session — only show once per session
+    let alreadyShown = false;
+    try { alreadyShown = !!sessionStorage.getItem(STORAGE_KEY); } catch (_) {}
+
+    if (alreadyShown) {
+      overlay.remove();
+      return;
+    }
+
+    // Prevent page scroll while overlay is showing
+    document.body.style.overflow = 'hidden';
+
+    const giftScene = document.getElementById('giftBoxScene');
+
+    // Click on gift box
+    giftScene?.addEventListener('click', () => {
+      document.body.style.overflow = '';
+      openGift();
+    });
+
+    // Enter key triggers the animation
+    document.addEventListener('keydown', function onEnter(e) {
+      if (e.key === 'Enter') {
+        document.removeEventListener('keydown', onEnter);
+        document.body.style.overflow = '';
+        openGift();
+      }
+    });
+
+    // Also allow Space on the gift box button
+    giftScene?.addEventListener('keydown', e => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        document.body.style.overflow = '';
+        openGift();
+      }
+    });
+  }
+
+  return { init };
+})();
+
+/* ═══════════════════════════════════
+   SEARCH SUGGESTIONS — Live dropdown
+═══════════════════════════════════ */
+const SearchSuggestions = (() => {
+  const suggestions = [
+    'Perfume', 'Watch', 'Gift Box', 'Rose Bouquet', 'Hamper',
+    'Engraved Gift', 'Luxury Set', 'Birthday Gift', 'Anniversary Gift',
+    'Festival Hamper', 'Personalized Gift', 'Chocolate Box'
+  ];
+
+  function init() {
+    const input   = document.getElementById('searchInput');
+    const dropdown = document.getElementById('searchSuggestions');
+    if (!input || !dropdown) return;
+
+    let highlighted = -1;
+
+    function renderSuggestions(query) {
+      const q = query.toLowerCase().trim();
+      if (!q) {
+        closeSuggestions();
+        return;
+      }
+
+      const matches = suggestions.filter(s => s.toLowerCase().includes(q));
+      if (!matches.length) { closeSuggestions(); return; }
+
+      dropdown.innerHTML = '';
+      matches.slice(0, 6).forEach((text, idx) => {
+        const item = document.createElement('div');
+        item.className = 'search-suggestion-item';
+        item.setAttribute('role', 'option');
+        item.textContent = text;
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = text;
+          input.dispatchEvent(new Event('input'));
+          closeSuggestions();
+        });
+        dropdown.appendChild(item);
+      });
+
+      dropdown.classList.add('open');
+      highlighted = -1;
+    }
+
+    function closeSuggestions() {
+      dropdown.classList.remove('open');
+      highlighted = -1;
+    }
+
+    input.addEventListener('input', () => renderSuggestions(input.value));
+    input.addEventListener('focus', () => { if (input.value) renderSuggestions(input.value); });
+    input.addEventListener('blur', () => setTimeout(closeSuggestions, 150));
+
+    // Arrow key navigation
+    input.addEventListener('keydown', e => {
+      const items = dropdown.querySelectorAll('.search-suggestion-item');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        highlighted = Math.min(highlighted + 1, items.length - 1);
+        items.forEach((it, i) => it.classList.toggle('highlighted', i === highlighted));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlighted = Math.max(highlighted - 1, -1);
+        items.forEach((it, i) => it.classList.toggle('highlighted', i === highlighted));
+      } else if (e.key === 'Enter' && highlighted >= 0) {
+        e.preventDefault();
+        input.value = items[highlighted].textContent;
+        input.dispatchEvent(new Event('input'));
+        closeSuggestions();
+      }
+    });
+  }
+
+  return { init };
+})();
+
+/* ═══════════════════════════════════
+   WISHLIST NAV — heart icon sync
+═══════════════════════════════════ */
+const WishlistNav = (() => {
+  function update() {
+    const navIcon  = document.getElementById('wishlistNavIcon');
+    const navBadge = document.getElementById('wishlistNavBadge');
+    if (!navIcon || !navBadge) return;
+
+    let count = 0;
+    try {
+      const raw = localStorage.getItem('gg-wishlist');
+      const arr = raw ? JSON.parse(raw) : [];
+      count = Array.isArray(arr) ? arr.length : 0;
+    } catch (_) {}
+
+    if (count > 0) {
+      navIcon.textContent = '❤️';
+      navBadge.textContent = count;
+      navBadge.classList.add('visible');
+    } else {
+      navIcon.textContent = '🤍';
+      navBadge.classList.remove('visible');
+    }
+  }
+
+  function init() {
+    update();
+    // Watch for wishlist changes via storage events + MutationObserver trick
+    window.addEventListener('storage', e => {
+      if (e.key === 'gg-wishlist') update();
+    });
+    // Also poll lightly for same-tab changes (wish-btn clicks)
+    document.addEventListener('click', e => {
+      if (e.target.closest('.wish-btn')) {
+        setTimeout(update, 50);
+      }
+    });
+  }
+
+  return { init };
+})();
+
+/* ═══════════════════════════════════
    APP INIT
 ═══════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
+  EntryAnimation.init();
   Theme.init();
   NavPill.init();
   MobileMenu.init();
   Cart.init();
   Wishlist.init();
+  WishlistNav.init();
   AddToCart.init();
   Search.init();
+  SearchSuggestions.init();
   FilterPills.init();
   Sort.init();
   QuickView.init();
   Newsletter.init();
   ScrollReveal.init();
   KeyboardNav.init();
+});
+/* ═══════════════════════════════════
+   PROFILE / LOGIN MODAL
+═══════════════════════════════════ */
+const ProfileLogin = (() => {
+  function buildModal() {
+    // Overlay
+    const ov = document.createElement('div');
+    ov.id = 'loginOverlay';
+    ov.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);
+      z-index:9000;opacity:0;transition:opacity .3s;pointer-events:none;
+      display:flex;align-items:center;justify-content:center;`;
+
+    // Modal box
+    const modal = document.createElement('div');
+    modal.id = 'loginModal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-label', 'Login');
+    modal.style.cssText = `
+      background:var(--surface);border:1.5px solid var(--border-soft);border-radius:20px;
+      padding:40px 36px;width:min(400px,90vw);max-height:90vh;overflow-y:auto;
+      transform:scale(0.92) translateY(20px);transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+      opacity:0;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.5);`;
+
+    modal.innerHTML = `
+      <button id="loginClose" aria-label="Close login" style="position:absolute;top:14px;right:14px;
+        width:32px;height:32px;background:var(--cream-dark);border:1px solid var(--border-soft);
+        border-radius:8px;font-size:14px;color:var(--warm-mid);cursor:pointer;
+        display:flex;align-items:center;justify-content:center;transition:.25s">✕</button>
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="width:56px;height:56px;background:linear-gradient(135deg,var(--gold-light),var(--teal));
+          border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;
+          font-size:26px;box-shadow:0 8px 24px rgba(110,198,207,0.4);">👤</div>
+        <h2 style="font-family:var(--font-serif);font-size:26px;font-weight:600;letter-spacing:-0.02em;
+          color:var(--text);margin-bottom:6px;">Welcome Back</h2>
+        <p style="font-size:13.5px;color:var(--text-muted);font-weight:300;">Sign in to your GiftGenius account</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;
+            text-transform:uppercase;color:var(--teal-dark);display:block;margin-bottom:7px;">Email</label>
+          <input id="loginEmail" type="email" placeholder="you@example.com"
+            style="width:100%;padding:12px 16px;background:var(--cream-dark);border:1.5px solid var(--border-soft);
+            border-radius:8px;font-family:var(--font-sans);font-size:14px;color:var(--text);outline:none;
+            transition:.25s;box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--teal)';this.style.boxShadow='0 0 0 3px rgba(110,198,207,0.2)'"
+            onblur="this.style.borderColor='';this.style.boxShadow=''">
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;
+            text-transform:uppercase;color:var(--teal-dark);display:block;margin-bottom:7px;">Password</label>
+          <input id="loginPassword" type="password" placeholder="••••••••"
+            style="width:100%;padding:12px 16px;background:var(--cream-dark);border:1.5px solid var(--border-soft);
+            border-radius:8px;font-family:var(--font-sans);font-size:14px;color:var(--text);outline:none;
+            transition:.25s;box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--teal)';this.style.boxShadow='0 0 0 3px rgba(110,198,207,0.2)'"
+            onblur="this.style.borderColor='';this.style.boxShadow=''">
+        </div>
+        <button id="loginSubmit" style="background:linear-gradient(135deg,var(--ink),var(--charcoal));
+          color:var(--cream);border:none;padding:14px;border-radius:8px;font-size:14.5px;font-weight:500;
+          cursor:pointer;transition:.25s;letter-spacing:.01em;margin-top:4px;"
+          onmouseover="this.style.background='linear-gradient(135deg,var(--teal-dark),var(--teal))';this.style.boxShadow='0 8px 24px rgba(110,198,207,0.35)'"
+          onmouseout="this.style.background='linear-gradient(135deg,var(--ink),var(--charcoal))';this.style.boxShadow=''">
+          Sign In →
+        </button>
+        <div style="text-align:center;">
+          <a href="#" style="font-size:12.5px;color:var(--teal-dark);text-decoration:none;transition:.2s;"
+            onmouseover="this.style.color='var(--teal)'" onmouseout="this.style.color='var(--teal-dark)'">
+            Forgot password?</a>
+        </div>
+        <div style="border-top:1px solid var(--border-soft);padding-top:18px;text-align:center;">
+          <p style="font-size:13px;color:var(--text-muted);">Don't have an account?
+            <a href="#" style="color:var(--gold);font-weight:500;text-decoration:none;">Sign up free</a>
+          </p>
+        </div>
+      </div>`;
+
+    ov.appendChild(modal);
+    document.body.appendChild(ov);
+
+    // Open helper
+    function open() {
+      ov.style.opacity = '1';
+      ov.style.pointerEvents = 'all';
+      modal.style.opacity = '1';
+      modal.style.transform = 'scale(1) translateY(0)';
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => document.getElementById('loginEmail')?.focus(), 100);
+    }
+
+    function close() {
+      ov.style.opacity = '0';
+      ov.style.pointerEvents = 'none';
+      modal.style.opacity = '0';
+      modal.style.transform = 'scale(0.92) translateY(20px)';
+      document.body.style.overflow = '';
+    }
+
+    // Close events
+    document.getElementById('loginClose').addEventListener('click', close);
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && ov.style.opacity === '1') close(); });
+
+    // Login submit
+    document.getElementById('loginSubmit').addEventListener('click', () => {
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass  = document.getElementById('loginPassword').value;
+      if (!email || !pass) {
+        Toast.show('Please fill in all fields.', 'error');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        Toast.show('Please enter a valid email.', 'error');
+        return;
+      }
+      Toast.show('Welcome to GiftGenius! 🎁');
+      close();
+    });
+
+    // Enter key submit
+    [document.getElementById('loginEmail'), document.getElementById('loginPassword')]
+      .forEach(inp => inp?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('loginSubmit').click();
+      }));
+
+    return { open, close };
+  }
+
+  function init() {
+    const profileModal = buildModal();
+
+    // Attach to the account (👤) icon button
+    document.querySelectorAll('.icon-btn').forEach(btn => {
+      if (btn.textContent.trim() === '👤' || btn.title === 'Account') {
+        btn.addEventListener('click', () => profileModal.open());
+      }
+    });
+  }
+
+  return { init };
+})();
+
+// Add to DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  ProfileLogin.init();
 });
