@@ -62,6 +62,11 @@ function el(tag, attrs = {}, children = []) {
   return node;
 }
 
+/** Basic email format check — shared by Newsletter + ProfileLogin */
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 /* ═══════════════════════════════════
    TOAST
 ═══════════════════════════════════ */
@@ -70,6 +75,7 @@ const Toast = (() => {
   const msgEl   = document.getElementById('toastMsg');
   let timer;
 
+  // Display a toast message, auto-hides after TOAST_DURATION ms
   function show(msg, type = 'success') {
     clearTimeout(timer);
     msgEl.textContent = msg;
@@ -90,6 +96,7 @@ const Theme = (() => {
   const iconEl  = btn?.querySelector('.theme-icon');
   const STORAGE_KEY = 'gg-theme';
 
+  // Apply + persist the chosen theme (dark/light)
   function applyTheme(dark) {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     if (iconEl) iconEl.textContent = dark ? '☀️' : '🌙';
@@ -98,6 +105,7 @@ const Theme = (() => {
     try { localStorage.setItem(STORAGE_KEY, dark ? 'dark' : 'light'); } catch (_) {}
   }
 
+  // Restore saved theme (or OS preference) and wire up the toggle button
   function init() {
     const stored = (() => { try { return localStorage.getItem(STORAGE_KEY); } catch(_) { return null; } })();
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -116,11 +124,13 @@ const Theme = (() => {
    NAV — pill indicator
 ═══════════════════════════════════ */
 const NavPill = (() => {
+  // Position the active-link indicator pill and react to nav clicks
   function init() {
     const pill  = document.getElementById('navPill');
     if (!pill) return;
     const links = pill.querySelectorAll('a');
 
+    // Slide the pill indicator under the given nav link
     function moveIndicator(linkEl) {
       const pr = pill.getBoundingClientRect();
       const er = linkEl.getBoundingClientRect();
@@ -149,6 +159,7 @@ const NavPill = (() => {
    MOBILE MENU — hamburger
 ═══════════════════════════════════ */
 const MobileMenu = (() => {
+  // Wire up the hamburger toggle, outside-click, and Escape-to-close
   function init() {
     const toggle = document.getElementById('menuToggle');
     const menu   = document.getElementById('mobileMenu');
@@ -207,10 +218,12 @@ const Cart = (() => {
   const totalEl  = document.getElementById('cartTotal');
   const progress = document.getElementById('cartProgressFill');
 
+  // Persist cart state to localStorage
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
   }
 
+  // Open the cart sidebar
   function open() {
     overlay.classList.add('open');
     sidebar.hidden = false;
@@ -219,6 +232,7 @@ const Cart = (() => {
     document.body.style.overflow = 'hidden';
   }
 
+  // Close the cart sidebar
   function close() {
     overlay.classList.remove('open');
     sidebar.hidden = true;
@@ -227,6 +241,7 @@ const Cart = (() => {
     document.body.style.overflow = '';
   }
 
+  // Add a product to the cart (or bump qty if already present)
   function addItem(name, price, img) {
     price = parseInt(price);
     const existing = state.items.find(i => i.name === name);
@@ -242,6 +257,7 @@ const Cart = (() => {
     Toast.show(`${name} added to cart`);
   }
 
+  // Remove a single line item from the cart
   function removeItem(index) {
     const item = state.items[index];
     if (!item) return;
@@ -252,6 +268,7 @@ const Cart = (() => {
     render();
   }
 
+  // Build the DOM row for one cart line item
   function buildCartItem(item, index) {
     const wrapper = el('div', { class: 'cart-item' });
 
@@ -271,6 +288,7 @@ const Cart = (() => {
     return wrapper;
   }
 
+  // Re-render the cart badge, progress bar, and item list from state
   function render() {
     // Badge
     badge.textContent = state.count;
@@ -327,6 +345,7 @@ const Cart = (() => {
     }
   }
 
+  // Wire up open/close/keyboard handlers and do the first render
   function init() {
     // Open / close
     document.getElementById('cartToggle')?.addEventListener('click', open);
@@ -365,10 +384,12 @@ const Wishlist = (() => {
     catch (_) { return new Set(); }
   })();
 
+  // Persist wishlist names to localStorage
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...wished])); } catch (_) {}
   }
 
+  // Add/remove a product from the wishlist and update the heart button
   function toggle(name, btn) {
     if (wished.has(name)) {
       wished.delete(name);
@@ -385,6 +406,7 @@ const Wishlist = (() => {
     save();
   }
 
+  // Restore wishlist button states and wire up click handlers
   function init() {
     document.querySelectorAll('.wish-btn').forEach(btn => {
       // Restore state
@@ -413,11 +435,13 @@ const Wishlist = (() => {
    ADD TO CART BUTTONS
 ═══════════════════════════════════ */
 const AddToCart = (() => {
+  // Toggle the add-button's loading state
   function setLoading(btn, loading) {
     btn.disabled = loading;
     btn.textContent = loading ? '…' : '+ Add';
   }
 
+  // Briefly show a confirmation state on the add-button
   function setAdded(btn) {
     btn.textContent = '✓ Added';
     btn.style.background = 'var(--gold)';
@@ -429,6 +453,7 @@ const AddToCart = (() => {
     }, 1800);
   }
 
+  // Wire up Add to Cart buttons across all product cards
   function init() {
     document.querySelectorAll('.add-btn').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -453,6 +478,7 @@ const AddToCart = (() => {
    SEARCH — fuzzy, debounced
 ═══════════════════════════════════ */
 const Search = (() => {
+  // Wire up the live fuzzy search input
   function init() {
     const input  = document.getElementById('searchInput');
     const status = document.getElementById('searchStatus');
@@ -496,6 +522,7 @@ const Search = (() => {
    FILTER PILLS
 ═══════════════════════════════════ */
 const FilterPills = (() => {
+  // Wire up the category filter pill buttons
   function init() {
     const pills = document.querySelectorAll('.pill');
     const cards = document.querySelectorAll('.pcard');
@@ -522,6 +549,7 @@ const FilterPills = (() => {
    SORT
 ═══════════════════════════════════ */
 const Sort = (() => {
+  // Wire up the sort dropdown (price / rating)
   function init() {
     const select = document.getElementById('sortSelect');
     const grid   = document.getElementById('productGrid');
@@ -566,6 +594,7 @@ const QuickView = (() => {
     4: { name: 'Signature Perfume', cat: 'Fragrance', price: '₹1,199', og: '₹1,499', rating: '4.9 ★ (218)', img: 'https://images.stockcake.com/public/e/b/3/eb3d9618-4d24-4f60-bf9c-17168329eb84_large/elegant-perfume-bottle-stockcake.jpg', desc: 'A sophisticated fragrance crafted to leave a lasting impression — luxury in a bottle.' },
   };
 
+  // Build and open the quick-view modal for a given product id
   function openModal(id) {
     const p = products[id];
     if (!p || !content) return;
@@ -606,6 +635,7 @@ const QuickView = (() => {
     document.body.style.overflow = 'hidden';
   }
 
+  // Close the quick-view modal
   function closeModal() {
     overlay?.classList.remove('open');
     overlay?.setAttribute('aria-hidden', 'true');
@@ -614,6 +644,7 @@ const QuickView = (() => {
     document.body.style.overflow = '';
   }
 
+  // Wire up quick-view triggers and close events
   function init() {
     document.querySelectorAll('.quickview-btn').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -637,6 +668,7 @@ const QuickView = (() => {
    NEWSLETTER
 ═══════════════════════════════════ */
 const Newsletter = (() => {
+  // Wire up the newsletter signup form
   function init() {
     const btn   = document.getElementById('nlSubmit');
     const input = document.getElementById('nlEmail');
@@ -645,7 +677,7 @@ const Newsletter = (() => {
     btn.addEventListener('click', () => {
       const val = input.value.trim();
       // Basic email validation
-      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      if (isValidEmail(val)) {
         Toast.show('Subscribed! 🎉 Check your inbox.');
         input.value = '';
       } else {
@@ -666,6 +698,7 @@ const Newsletter = (() => {
    SCROLL REVEAL — Intersection Observer
 ═══════════════════════════════════ */
 const ScrollReveal = (() => {
+  // Reveal cards/sections as they scroll into view
   function init() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -689,6 +722,7 @@ const ScrollReveal = (() => {
    KEYBOARD NAVIGATION
 ═══════════════════════════════════ */
 const KeyboardNav = (() => {
+  // Arrow-key navigation between product cards in the grid
   function init() {
     // Arrow key navigation in product grid
     const grid = document.getElementById('productGrid');
@@ -723,6 +757,7 @@ const EntryAnimation = (() => {
   const STORAGE_KEY = 'gg-entry-shown';
   const CONFETTI_COLORS = ['#D4AF37','#6EC6CF','#FFA726','#fff','#4FB3BF','#FFD700','#a8f0f5','#ffd93d','#B8791A'];
 
+  // Spawn confetti pieces inside the entry overlay
   function createConfetti() {
     const container = document.getElementById('confettiContainer');
     if (!container) return;
@@ -743,6 +778,7 @@ const EntryAnimation = (() => {
     }
   }
 
+  // Spawn a timed sequence of firework bursts
   function createFireworks() {
     const container = document.getElementById('fireworkContainer');
     if (!container) return;
@@ -772,6 +808,7 @@ const EntryAnimation = (() => {
     });
   }
 
+  // Play the full gift-box opening sequence (lid, mascot, brand, fade-out)
   function openGift() {
     const scene   = document.getElementById('giftBoxScene');
     const brand   = document.getElementById('entryBrand');
@@ -805,6 +842,7 @@ const EntryAnimation = (() => {
     try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch (_) {}
   }
 
+  // Show the entry overlay once per session and wire up open triggers
   function init() {
     const overlay = document.getElementById('entryOverlay');
     if (!overlay) return;
@@ -855,12 +893,14 @@ const EntryAnimation = (() => {
    SEARCH SUGGESTIONS — Live dropdown
 ═══════════════════════════════════ */
 const SearchSuggestions = (() => {
+  // Static list of suggested search terms
   const suggestions = [
     'Perfume', 'Watch', 'Gift Box', 'Rose Bouquet', 'Hamper',
     'Engraved Gift', 'Luxury Set', 'Birthday Gift', 'Anniversary Gift',
     'Festival Hamper', 'Personalized Gift', 'Chocolate Box'
   ];
 
+  // Wire up the live search-suggestions dropdown
   function init() {
     const input   = document.getElementById('searchInput');
     const dropdown = document.getElementById('searchSuggestions');
@@ -868,6 +908,7 @@ const SearchSuggestions = (() => {
 
     let highlighted = -1;
 
+    // Render matching suggestions for the current query
     function renderSuggestions(query) {
       const q = query.toLowerCase().trim();
       if (!q) {
@@ -897,6 +938,7 @@ const SearchSuggestions = (() => {
       highlighted = -1;
     }
 
+    // Hide and reset the suggestions dropdown
     function closeSuggestions() {
       dropdown.classList.remove('open');
       highlighted = -1;
@@ -934,6 +976,7 @@ const SearchSuggestions = (() => {
    WISHLIST NAV — heart icon sync
 ═══════════════════════════════════ */
 const WishlistNav = (() => {
+  // Sync the header wishlist icon + badge with localStorage
   function update() {
     const navIcon  = document.getElementById('wishlistNavIcon');
     const navBadge = document.getElementById('wishlistNavBadge');
@@ -956,6 +999,7 @@ const WishlistNav = (() => {
     }
   }
 
+  // Initial sync plus live updates on wishlist changes
   function init() {
     update();
     // Watch for wishlist changes via storage events + MutationObserver trick
@@ -993,11 +1037,13 @@ document.addEventListener('DOMContentLoaded', () => {
   Newsletter.init();
   ScrollReveal.init();
   KeyboardNav.init();
+  ProfileLogin.init();
 });
 /* ═══════════════════════════════════
    PROFILE / LOGIN MODAL
 ═══════════════════════════════════ */
 const ProfileLogin = (() => {
+  // Build the login modal DOM and wire up its interactions
   function buildModal() {
     // Overlay
     const ov = document.createElement('div');
@@ -1105,7 +1151,7 @@ const ProfileLogin = (() => {
         Toast.show('Please fill in all fields.', 'error');
         return;
       }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!isValidEmail(email)) {
         Toast.show('Please enter a valid email.', 'error');
         return;
       }
@@ -1122,6 +1168,7 @@ const ProfileLogin = (() => {
     return { open, close };
   }
 
+  // Mount the login modal and bind it to the account icon button
   function init() {
     const profileModal = buildModal();
 
@@ -1135,8 +1182,3 @@ const ProfileLogin = (() => {
 
   return { init };
 })();
-
-// Add to DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-  ProfileLogin.init();
-});
