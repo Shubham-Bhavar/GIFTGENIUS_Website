@@ -1065,6 +1065,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 /* ─── 10. PROMO ─── */
 .promo-wrap { padding: 0 5% var(--sp-9); }
 
+/* Banner shell + decorative glow/highlight pseudo-elements */
 .promo-banner {
   background: var(--charcoal);
   border-radius: 20px;
@@ -1096,6 +1097,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 
 .promo-eyebrow { color: var(--gold-light) !important; margin-bottom: 10px; }
 
+/* Left side — headline, copy, sale progress */
 .promo-text h2 {
   font-family: var(--font-serif);
   font-size: clamp(22px, 2.5vw, 32px);
@@ -1141,6 +1143,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
   position: relative;
 }
 
+/* Right side — big "30% OFF" number callout */
 .promo-right {
   text-align: center;
   position: relative;
@@ -1672,6 +1675,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 .pay-icons { display: flex; gap: 10px; font-size: 18px; opacity: 0.4; }
 
 /* ─── 16. CART SIDEBAR ─── */
+/* Dimmed backdrop behind the sliding cart panel */
 .cart-overlay {
   position: fixed;
   inset: 0;
@@ -1685,6 +1689,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 
 .cart-overlay.open { opacity: 1; pointer-events: all; }
 
+/* Sliding panel itself */
 .cart-side {
   position: fixed;
   top: 0; right: 0;
@@ -1700,6 +1705,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 
 .cart-side:not([hidden]) { transform: translateX(0); }
 
+/* Free-shipping progress bar */
 .cart-progress {
   height: 3px;
   background: var(--border-soft);
@@ -1716,6 +1722,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
   box-shadow: 0 0 8px rgba(110,198,207,0.4);
 }
 
+/* Header — title, item count, close button */
 .cart-hd {
   padding: 22px 22px 18px;
   border-bottom: 1px solid var(--border-soft);
@@ -1755,10 +1762,12 @@ button { font-family: var(--font-sans); cursor: pointer; }
 
 .cart-body { flex: 1; overflow-y: auto; padding: 16px 22px; }
 
+/* Empty-cart placeholder */
 .cart-empty { text-align: center; padding: 60px 20px; color: var(--warm-light); }
 .cart-empty .ei { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
 .cart-empty p { font-size: 14px; font-weight: 300; line-height: 1.7; }
 
+/* "Add ₹X more for free shipping" message banner */
 .cart-msg {
   border-radius: 6px;
   padding: 9px 12px;
@@ -1770,6 +1779,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 .cart-msg--free { background: rgba(110,198,207,0.08); border: 1px solid rgba(110,198,207,0.25); color: #3A8F98; }
 .cart-msg--ship strong { color: var(--gold); }
 
+/* Individual line item row */
 .cart-item {
   display: flex;
   gap: 14px;
@@ -1808,6 +1818,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 
 .ci-del:hover { color: var(--danger); }
 
+/* Footer — total + checkout button */
 .cart-ft { padding: 20px 22px; border-top: 1px solid var(--border-soft); }
 
 .cart-total-row {
@@ -1845,6 +1856,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 .checkout-btn:hover { background: var(--gold); color: var(--ink); box-shadow: 0 6px 24px rgba(184,121,26,0.3); }
 
 /* ─── 17. QUICK VIEW MODAL ─── */
+/* Dimmed backdrop behind the centered modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1858,6 +1870,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 
+/* The centered modal box */
 .quickview-modal {
   position: fixed;
   top: 50%; left: 50%;
@@ -1885,6 +1898,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 
 .quickview-modal::backdrop { display: none; }
 
+/* Close (✕) button */
 .modal-close {
   position: absolute;
   top: var(--sp-2);
@@ -1901,6 +1915,7 @@ button { font-family: var(--font-sans); cursor: pointer; }
 
 .modal-close:hover { background: var(--parchment); color: var(--text); }
 
+/* Two-column layout: product image + product info */
 .modal-content { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
 
 .modal-img {
@@ -3005,11 +3020,6 @@ button { font-family: var(--font-sans); cursor: pointer; }
   transition: opacity 0.4s ease 0.3s, transform 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.3s;
 }
 
-.cartoon-popup.popped .hi-bubble {
-  opacity: 1;
-  transform: scale(1) translateY(0);
-}
-
 .hi-tail {
   position: absolute;
   bottom: -9px;
@@ -3018,15 +3028,6 @@ button { font-family: var(--font-sans); cursor: pointer; }
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-top: 10px solid #E6F7FA;
-}
-
-/* Confetti — teal + gold + orange palette */
-.confetti-piece {
-  position: absolute;
-  top: -10px;
-  width: 8px; height: 8px;
-  border-radius: 2px;
-  animation: confettiFall linear forwards;
 }
 
 /* ─── DARK MODE TEAL FIXES ─── */
