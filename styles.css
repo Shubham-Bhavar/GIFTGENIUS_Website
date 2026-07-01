@@ -79,7 +79,7 @@
 /* Dark mode overrides */
 [data-theme="dark"] {
   --bg:           #0F1A1C;      /* dark teal background */
-  --cream:        #0F1A1C;
+  --cream:        #e6f7fa;
   --cream-dark:   #162428;
   --parchment:    #1E2A2D;
   --surface:      #1E2A2D;
@@ -942,8 +942,8 @@ button { font-family: var(--font-sans); cursor: pointer; }
   pointer-events: none;
 }
 
-.marquee-section::before { left: 0; background: linear-gradient(90deg, var(--ink), transparent); }
-.marquee-section::after  { right: 0; background: linear-gradient(-90deg, var(--ink), transparent); }
+.marquee-section::before { left: 0; background: linear-gradient(90deg,#8aabb0, transparent); }
+.marquee-section::after  { right: 0; background: linear-gradient(-90deg,#8aabb0, transparent); }
 
 .marquee-track {
   display: flex;
