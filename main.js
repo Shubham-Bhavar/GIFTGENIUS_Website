@@ -1018,28 +1018,6 @@ const WishlistNav = (() => {
 })();
 
 /* ═══════════════════════════════════
-   APP INIT
-═══════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  EntryAnimation.init();
-  Theme.init();
-  NavPill.init();
-  MobileMenu.init();
-  Cart.init();
-  Wishlist.init();
-  WishlistNav.init();
-  AddToCart.init();
-  Search.init();
-  SearchSuggestions.init();
-  FilterPills.init();
-  Sort.init();
-  QuickView.init();
-  Newsletter.init();
-  ScrollReveal.init();
-  KeyboardNav.init();
-  ProfileLogin.init();
-});
-/* ═══════════════════════════════════
    PROFILE / LOGIN MODAL
 ═══════════════════════════════════ */
 const ProfileLogin = (() => {
@@ -1182,3 +1160,27 @@ const ProfileLogin = (() => {
 
   return { init };
 })();
+/* ═══════════════════════════════════
+   APP INIT
+═══════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderProducts();
+
+  EntryAnimation.init();
+  Theme.init();
+  NavPill.init();
+  MobileMenu.init();
+  Cart.init();
+  Wishlist.init();
+  WishlistNav.init();
+  AddToCart.init();
+  Search.init();
+  SearchSuggestions.init();
+  FilterPills.init();
+  Sort.init();
+  QuickView.init();
+  Newsletter.init();
+  ScrollReveal.init();
+  KeyboardNav.init();
+  ProfileLogin.init();
+});
