@@ -83,7 +83,7 @@ function buildProductCard(product) {
   const tagsAttr = product.tags.join(' ');
 
   return `
-    <article class="pcard" role="listitem" data-name="${product.name.toLowerCase()}" data-tags="${tagsAttr}" data-price="${product.price}" data-rating="${product.rating}">
+    <article class="pcard" role="listitem" data-name="${product.name.toLowerCase()}" data-category="${product.category.toLowerCase()}" data-tags="${tagsAttr}" data-price="${product.price}" data-rating="${product.rating}">
       <div class="pcard-img">
         <span class="pbadge ${product.badge.className}">${product.badge.text}</span>
         <button class="wish-btn" aria-label="Add ${product.name} to wishlist" aria-pressed="false">🤍</button>
