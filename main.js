@@ -38,6 +38,35 @@ function fuzzyMatch(str, query) {
   }
   return true;
 }
+function fuzzyMatchFields(fields, query) {
+  if (!query) return true;
+
+  return fields.some(field => fuzzyMatch(field || '', query));
+}
+
+function cardMatchesQuery(card, query) {
+  return fuzzyMatchFields(
+    [
+      card.dataset.name,
+      card.dataset.category,
+      card.dataset.tags
+    ],
+    query
+  );
+}
+
+function cardMatchesFilter(card, filter) {
+  if (filter === 'all') return true;
+
+  if (filter === 'budget') {
+    const price = parseInt(card.dataset.price, 10) || 0;
+    return price < 999;
+  }
+
+  return (card.dataset.tags || '')
+    .split(/\s+/)
+    .includes(filter);
+}
 
 /** Safe innerHTML alternative using textContent */
 function createTextEl(tag, text, cls) {
@@ -66,7 +95,54 @@ function el(tag, attrs = {}, children = []) {
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
+const ProductDisplay = (() => {
+  let query = '';
+  let filter = 'all';
 
+  function setQuery(newQuery) {
+    query = (newQuery || '').trim();
+    apply();
+  }
+
+  function setFilter(newFilter) {
+    filter = newFilter || 'all';
+    apply();
+  }
+
+  function apply() {
+    const cards = document.querySelectorAll('.pcard');
+    let visible = 0;
+
+    cards.forEach(card => {
+      const searchMatches = cardMatchesQuery(card, query);
+      const filterMatches = cardMatchesFilter(card, filter);
+
+      const show = searchMatches && filterMatches;
+
+      card.style.display = show ? '' : 'none';
+
+      if (show) visible++;
+    });
+
+    updateSearchStatus(visible);
+  }
+
+  function updateSearchStatus(visible) {
+    const status = document.getElementById('searchStatus');
+
+    if (!status) return;
+
+    status.textContent = query
+      ? `${visible} product${visible !== 1 ? 's' : ''} found`
+      : '';
+  }
+
+  return {
+    setQuery,
+    setFilter,
+    apply
+  };
+})();
 /* ═══════════════════════════════════
    TOAST
 ═══════════════════════════════════ */
@@ -478,35 +554,17 @@ const AddToCart = (() => {
    SEARCH — fuzzy, debounced
 ═══════════════════════════════════ */
 const Search = (() => {
-  // Wire up the live fuzzy search input
   function init() {
-    const input  = document.getElementById('searchInput');
-    const status = document.getElementById('searchStatus');
+    const input = document.getElementById('searchInput');
+
     if (!input) return;
 
     const handleSearch = debounce(() => {
-      const query = input.value.trim();
-      const cards = document.querySelectorAll('.pcard');
-      let visible = 0;
-
-      cards.forEach(card => {
-        const name = card.dataset.name || '';
-        const match = fuzzyMatch(name, query);
-        card.style.display = match ? '' : 'none';
-        if (match) visible++;
-      });
-
-      // Announce results for screen readers
-      if (status) {
-        status.textContent = query
-          ? `${visible} product${visible !== 1 ? 's' : ''} found`
-          : '';
-      }
+      ProductDisplay.setQuery(input.value);
     }, 250);
 
     input.addEventListener('input', handleSearch);
 
-    // Clear on Escape
     input.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
         input.value = '';
@@ -517,34 +575,30 @@ const Search = (() => {
 
   return { init };
 })();
-
 /* ═══════════════════════════════════
    FILTER PILLS
 ═══════════════════════════════════ */
 const FilterPills = (() => {
-  // Wire up the category filter pill buttons
   function init() {
     const pills = document.querySelectorAll('.pill');
-    const cards = document.querySelectorAll('.pcard');
 
     pills.forEach(pill => {
       pill.addEventListener('click', () => {
-        pills.forEach(p => { p.classList.remove('active'); p.setAttribute('aria-pressed', 'false'); });
+        pills.forEach(p => {
+          p.classList.remove('active');
+          p.setAttribute('aria-pressed', 'false');
+        });
+
         pill.classList.add('active');
         pill.setAttribute('aria-pressed', 'true');
 
-        const filter = pill.dataset.filter;
-        cards.forEach(card => {
-          const show = filter === 'all' || (card.dataset.tags || '').includes(filter);
-          card.style.display = show ? '' : 'none';
-        });
+        ProductDisplay.setFilter(pill.dataset.filter);
       });
     });
   }
 
   return { init };
 })();
-
 /* ═══════════════════════════════════
    SORT
 ═══════════════════════════════════ */
