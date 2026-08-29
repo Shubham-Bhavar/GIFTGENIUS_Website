@@ -157,7 +157,7 @@
 
     <div class="hero-actions">
       <a href="#products" class="btn-primary">Explore Gifts →</a>
-      <a href="#" class="btn-outline">Take a AI Powered Gift Quiz</a>
+      <a href="#" class="btn-outline" id="giftFinderBtn">✨ Find My Perfect Gift</a>
     </div>
 
     <div class="hero-progress" aria-hidden="true">
@@ -616,7 +616,25 @@
   <button class="modal-close" id="modalClose" aria-label="Close quick view">✕</button>
   <div class="modal-content" id="modalContent"></div>
 </dialog>
+<!-- ─── GIFT FINDER MODAL ─── -->
+<div class="modal-overlay gf-overlay" id="giftFinderOverlay" aria-hidden="true"></div>
 
+<dialog
+  class="quickview-modal gf-modal"
+  id="giftFinderModal"
+  aria-label="GiftGenius Gift Finder"
+  aria-modal="true"
+>
+  <button
+    class="modal-close"
+    id="giftFinderClose"
+    aria-label="Close gift finder"
+  >
+    ✕
+  </button>
+
+  <div class="gf-content" id="giftFinderContent"></div>
+</dialog>
 <!-- ─── TOAST ─── -->
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
   <span class="toast-ico" aria-hidden="true">✓</span>
