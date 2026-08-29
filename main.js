@@ -717,7 +717,453 @@ const QuickView = (() => {
 
   return { init };
 })();
+/* ═══════════════════════════════════
+   GIFT FINDER — AI-style consultation modal
+   Interface + state collection ONLY.
+   No scoring, ranking, or recommendation logic (that's Step 4).
+═══════════════════════════════════ */
+const GiftFinder = (() => {
+  const overlay  = document.getElementById('giftFinderOverlay');
+  const modal    = document.getElementById('giftFinderModal');
+  const closeBtn = document.getElementById('giftFinderClose');
+  const content  = document.getElementById('giftFinderContent');
 
+  const TOTAL_STEPS = 4;
+  let currentStep = 1;
+
+  // 'form' while answering steps 1-4, 'thinking' during the brief AI transition,
+  // 'confirmation' once the profile is ready. Only 'form' uses currentStep.
+  let phase = 'form';
+
+  // Tracks the pending "thinking" transition timer so it can be cancelled if the
+  // modal is closed/reopened mid-transition — prevents a stale timeout from
+  // force-advancing a session the user has already moved on from.
+  let thinkingTimeoutId = null;
+
+  // Tracks the last rendered progress percentage so the bar has a "from" value
+  // to transition from — otherwise the CSS transition never fires, since
+  // innerHTML replacement creates the element already at its target width.
+  let lastProgressPct = 0;
+
+  // Source of truth for collected answers — Step 4 reads this via getState()
+  const GiftFinderState = {
+    recipient: null,
+    occasion: null,
+    budget: 1500,
+    interests: []
+  };
+
+  const RECIPIENTS = [
+    { value: 'friend',    icon: '👭', label: 'Friend' },
+    { value: 'partner',   icon: '❤️', label: 'Partner' },
+    { value: 'parent',    icon: '👨‍👩‍👧', label: 'Parent' },
+    { value: 'sibling',   icon: '🧑‍🤝‍🧑', label: 'Sibling' },
+    { value: 'colleague', icon: '💼', label: 'Colleague' },
+    { value: 'self',      icon: '✨', label: 'Myself' }
+  ];
+
+  // Values match PRODUCTS[i].occasion exactly — no translation layer needed in Step 4
+  const OCCASIONS = [
+    { value: 'birthday',    icon: '🎂', label: 'Birthday' },
+    { value: 'anniversary', icon: '💕', label: 'Anniversary' },
+    { value: 'festival',    icon: '🪔', label: 'Festival' },
+    { value: 'graduation',  icon: '🎓', label: 'Graduation' },
+    { value: 'valentine',   icon: '❤️', label: "Valentine's Day" }
+  ];
+
+  // Values match PRODUCTS[i].category (lowercased) exactly
+  const INTERESTS = [
+    { value: 'flowers',     icon: '🌸', label: 'Flowers' },
+    { value: 'fragrance',   icon: '🌺', label: 'Fragrance' },
+    { value: 'accessories', icon: '⌚', label: 'Accessories' },
+    { value: 'gift sets',   icon: '🎁', label: 'Gift Sets' }
+  ];
+
+  const BUDGET_MIN = 500;
+  const BUDGET_MAX = 5000;
+  const BUDGET_STEP = 100;
+
+  // Contextual progress copy per step — replaces a plain "Step X of 4"
+  const PROGRESS_LABELS = {
+    1: 'Understanding them',
+    2: 'Understanding the occasion',
+    3: 'Understanding your budget',
+    4: 'Almost ready'
+  };
+
+  // Persistent AI identity header shown at the top of every form step
+  function renderIdentity() {
+    return `
+      <div class="gf-identity">
+        <div class="gf-identity-name"><span class="sparkle">✨</span> GIFTGENIUS AI</div>
+        <p class="gf-identity-role">Your personal gift consultant</p>
+      </div>
+    `;
+  }
+
+  // Progress bar (width set via animateProgress, not inline here) + contextual label
+  function renderProgress() {
+    const pct = (currentStep / TOTAL_STEPS) * 100;
+    return `
+      <div class="gf-progress-track">
+        <div class="gf-progress-fill" id="gfProgressFill" data-target="${pct}"></div>
+      </div>
+      <div class="gf-progress-label">
+        <span>${PROGRESS_LABELS[currentStep]}</span>
+        <span class="gf-progress-pct">${pct}%</span>
+      </div>
+    `;
+  }
+
+  // Animates the progress bar from its last known width to the new step's width,
+  // using a double rAF so the browser registers the "from" state before the
+  // "to" state is applied (required for the CSS transition to actually run).
+  function animateProgress() {
+    const fill = document.getElementById('gfProgressFill');
+    if (!fill) return;
+    const target = parseFloat(fill.dataset.target);
+    fill.style.width = lastProgressPct + '%';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fill.style.width = target + '%';
+        lastProgressPct = target;
+      });
+    });
+  }
+
+  // Moves focus to the current step's heading so screen reader users get an
+  // audible cue that content changed after Continue/Back.
+  function focusHeading(selector) {
+    const heading = content.querySelector(selector);
+    if (!heading) return;
+    heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+  }
+
+  // Step 1 — Recipient
+  function renderStep1() {
+    return `
+      ${renderIdentity()}
+      ${renderProgress()}
+      <div class="gf-step">
+        <p class="gf-lead">Let's find something they'll genuinely love.</p>
+        <h2 class="gf-title">Who are you shopping for?</h2>
+        <div class="gf-options" role="group" aria-label="Select recipient">
+          ${RECIPIENTS.map(r => `
+            <button type="button" class="gf-option${GiftFinderState.recipient === r.value ? ' selected' : ''}"
+              data-field="recipient" data-value="${r.value}"
+              aria-pressed="${GiftFinderState.recipient === r.value}">
+              <span class="gf-option-icon" aria-hidden="true">${r.icon}</span>
+              <span>${r.label}</span>
+            </button>
+          `).join('')}
+        </div>
+        <p class="gf-microcopy">This helps me understand who the gift is really for.</p>
+        <div class="gf-nav">
+          <button type="button" class="gf-btn-continue" id="gfContinueBtn">Continue →</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Step 2 — Occasion (required)
+  function renderStep2() {
+    return `
+      ${renderIdentity()}
+      ${renderProgress()}
+      <div class="gf-step">
+        <p class="gf-lead">Perfect. What are we celebrating?</p>
+        <h2 class="gf-title">What's the occasion?</h2>
+        <div class="gf-options" role="group" aria-label="Select occasion">
+          ${OCCASIONS.map(o => `
+            <button type="button" class="gf-option${GiftFinderState.occasion === o.value ? ' selected' : ''}"
+              data-field="occasion" data-value="${o.value}"
+              aria-pressed="${GiftFinderState.occasion === o.value}">
+              <span class="gf-option-icon" aria-hidden="true">${o.icon}</span>
+              <span>${o.label}</span>
+            </button>
+          `).join('')}
+        </div>
+        <p class="gf-microcopy">The occasion helps me narrow down the right kind of gift.</p>
+        <div class="gf-nav">
+          <button type="button" class="gf-btn-back" id="gfBackBtn">← Back</button>
+          <button type="button" class="gf-btn-continue" id="gfContinueBtn" ${GiftFinderState.occasion ? '' : 'disabled'}>Continue →</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Step 3 — Budget (required, numeric)
+  function renderStep3() {
+    return `
+      ${renderIdentity()}
+      ${renderProgress()}
+      <div class="gf-step">
+        <h2 class="gf-title">What's your comfortable gift budget?</h2>
+        <div class="gf-budget-display">₹${GiftFinderState.budget.toLocaleString('en-IN')}</div>
+        <input type="range" class="gf-slider" id="gfBudgetSlider"
+          min="${BUDGET_MIN}" max="${BUDGET_MAX}" step="${BUDGET_STEP}"
+          value="${GiftFinderState.budget}"
+          aria-label="Gift budget in rupees"
+          aria-valuetext="₹${GiftFinderState.budget.toLocaleString('en-IN')}">
+        <div class="gf-slider-range">
+          <span>₹${BUDGET_MIN.toLocaleString('en-IN')}</span>
+          <span>₹${BUDGET_MAX.toLocaleString('en-IN')}</span>
+        </div>
+        <p class="gf-microcopy">I'll keep suggestions within this range.</p>
+        <div class="gf-nav">
+          <button type="button" class="gf-btn-back" id="gfBackBtn">← Back</button>
+          <button type="button" class="gf-btn-continue" id="gfContinueBtn">Continue →</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Step 4 — Interests (optional, multi-select) + submit
+  function renderStep4() {
+    return `
+      ${renderIdentity()}
+      ${renderProgress()}
+      <div class="gf-step">
+        <p class="gf-lead">Nice. What kind of things would suit them?</p>
+        <h2 class="gf-title">Pick anything that feels like them.</h2>
+        <div class="gf-options gf-options--interests" role="group" aria-label="Select interests">
+          ${INTERESTS.map(i => `
+            <button type="button" class="gf-option${GiftFinderState.interests.includes(i.value) ? ' selected' : ''}"
+              data-field="interests" data-value="${i.value}"
+              aria-pressed="${GiftFinderState.interests.includes(i.value)}">
+              <span class="gf-option-icon" aria-hidden="true">${i.icon}</span>
+              <span>${i.label}</span>
+            </button>
+          `).join('')}
+        </div>
+        <p class="gf-microcopy">Choose as many as you like — I'll use these later to personalize the results.</p>
+        <div class="gf-nav">
+          <button type="button" class="gf-btn-back" id="gfBackBtn">← Back</button>
+          <button type="button" class="gf-btn-continue" id="gfSubmitBtn">✨ Build My Gift Profile</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Brief AI "thinking" transition — pure UI, no computation happens here
+  function renderThinking() {
+    const items = [
+      { label: 'Recipient', done: true },
+      { label: 'Occasion',  done: !!GiftFinderState.occasion },
+      { label: 'Budget',    done: GiftFinderState.budget > 0 },
+      { label: 'Interests', done: true }
+    ];
+    return `
+      <div class="gf-thinking">
+        <div class="gf-identity-name" style="justify-content:center"><span class="sparkle">✨</span> GIFTGENIUS AI</div>
+        <p class="gf-thinking-text">Understanding your gift profile…</p>
+        <div class="gf-checklist">
+          ${items.map(i => `
+            <div class="gf-checklist-item">
+              <span>${i.label}</span>
+              <span class="gf-checklist-check">${i.done ? '✓' : ''}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Neutral confirmation — explicitly no product results, no fake AI claims
+  function renderConfirmation() {
+    return `
+      <div class="gf-confirmation">
+        <div class="gf-identity-name" style="justify-content:center"><span class="sparkle">✨</span> GIFTGENIUS AI</div>
+        <h2 class="gf-confirmation-title">Your gift profile is ready.</h2>
+        <p class="gf-confirmation-text">I've got everything I need.</p>
+        <p class="gf-confirmation-note">Your personalized gift recommendations will appear here once the recommendation engine is connected.</p>
+        <button type="button" class="gf-btn-done" id="gfDoneBtn">Done</button>
+      </div>
+    `;
+  }
+
+  const STEP_RENDERERS = { 1: renderStep1, 2: renderStep2, 3: renderStep3, 4: renderStep4 };
+
+  // Re-render whatever the current phase/step calls for and wire up its interactions
+  function render() {
+    if (!content) return;
+
+    if (phase === 'thinking') {
+      content.innerHTML = renderThinking();
+      clearTimeout(thinkingTimeoutId);
+      thinkingTimeoutId = setTimeout(() => {
+        thinkingTimeoutId = null;
+        if (phase !== 'thinking') return; // guard against stale timer after close/reopen
+        phase = 'confirmation';
+        render();
+      }, 1100);
+      return;
+    }
+
+    if (phase === 'confirmation') {
+      content.innerHTML = renderConfirmation();
+      focusHeading('.gf-confirmation-title');
+      document.getElementById('gfDoneBtn')?.addEventListener('click', () => {
+        close();
+        Toast.show('✨ Got it! Your gift profile is ready.');
+      });
+      return;
+    }
+
+    content.innerHTML = STEP_RENDERERS[currentStep]();
+    wireStepEvents();
+    animateProgress();
+    focusHeading('.gf-title');
+  }
+
+  // Attach click/input handlers for whatever elements exist in the current step
+  function wireStepEvents() {
+    content.querySelectorAll('.gf-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.dataset.field;
+        const value = btn.dataset.value;
+
+        if (field === 'interests') {
+          const idx = GiftFinderState.interests.indexOf(value);
+          if (idx === -1) GiftFinderState.interests.push(value);
+          else GiftFinderState.interests.splice(idx, 1);
+        } else {
+          GiftFinderState[field] = value;
+        }
+
+        render();
+      });
+    });
+
+    const slider = document.getElementById('gfBudgetSlider');
+    if (slider) {
+      slider.addEventListener('input', () => {
+        GiftFinderState.budget = parseInt(slider.value, 10);
+        const formatted = `₹${GiftFinderState.budget.toLocaleString('en-IN')}`;
+        const display = content.querySelector('.gf-budget-display');
+        if (display) display.textContent = formatted;
+        slider.setAttribute('aria-valuetext', formatted);
+      });
+    }
+
+    const backBtn = document.getElementById('gfBackBtn');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        if (currentStep > 1) {
+          currentStep--;
+          render();
+        }
+      });
+    }
+
+    const continueBtn = document.getElementById('gfContinueBtn');
+    if (continueBtn) {
+      continueBtn.addEventListener('click', () => {
+        if (!validateStep(currentStep)) return;
+        currentStep++;
+        render();
+      });
+    }
+
+    const submitBtn = document.getElementById('gfSubmitBtn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', handleSubmit);
+    }
+  }
+
+  function validateStep(step) {
+    if (step === 2 && !GiftFinderState.occasion) {
+      Toast.show('Choose an occasion first.', 'error');
+      return false;
+    }
+    if (step === 3 && !(GiftFinderState.budget > 0)) {
+      Toast.show('Choose a budget to continue.', 'error');
+      return false;
+    }
+    return true;
+  }
+
+  // Deliberately does NOT score, rank, or recommend anything — that's Step 4.
+  function handleSubmit() {
+    if (phase !== 'form') return; // guard against double-click
+    if (!GiftFinderState.occasion) {
+      Toast.show('Choose an occasion first.', 'error');
+      return;
+    }
+    if (!(GiftFinderState.budget > 0)) {
+      Toast.show('Choose a budget to continue.', 'error');
+      return;
+    }
+    phase = 'thinking';
+    render();
+  }
+
+  // Open the modal at Step 1 — collected answers from a prior session are preserved
+  function open() {
+    currentStep = 1;
+    phase = 'form';
+    lastProgressPct = 0;
+    render();
+    overlay?.classList.add('open');
+    overlay?.setAttribute('aria-hidden', 'false');
+    modal?.classList.add('open');
+    modal?.setAttribute('open', '');
+    document.body.style.overflow = 'hidden';
+    closeBtn?.focus();
+  }
+
+  // Close the modal without resetting collected answers; cancels any pending timer.
+  function close() {
+    clearTimeout(thinkingTimeoutId);
+    thinkingTimeoutId = null;
+    overlay?.classList.remove('open');
+    overlay?.setAttribute('aria-hidden', 'true');
+    modal?.classList.remove('open');
+    modal?.removeAttribute('open');
+    document.body.style.overflow = '';
+  }
+
+  // Returns a shallow copy so external code (Step 4) can't mutate internal state directly
+  function getState() {
+    return { ...GiftFinderState, interests: [...GiftFinderState.interests] };
+  }
+
+  // Simple focus trap: keeps Tab/Shift+Tab cycling within the modal while it's open.
+  function trapFocus(e) {
+    if (e.key !== 'Tab' || !modal?.classList.contains('open')) return;
+    const focusable = modal.querySelectorAll('button:not([disabled]), input, [href], [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  function init() {
+    const trigger = document.getElementById('giftFinderBtn');
+    trigger?.addEventListener('click', e => {
+      e.preventDefault();
+      open();
+    });
+
+    closeBtn?.addEventListener('click', close);
+    overlay?.addEventListener('click', close);
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal?.classList.contains('open')) close();
+    });
+
+    modal?.addEventListener('keydown', trapFocus);
+  }
+
+  return { init, open, close, getState };
+})();
 /* ═══════════════════════════════════
    NEWSLETTER
 ═══════════════════════════════════ */
@@ -1233,6 +1679,7 @@ document.addEventListener('DOMContentLoaded', () => {
   FilterPills.init();
   Sort.init();
   QuickView.init();
+  GiftFinder.init();
   Newsletter.init();
   ScrollReveal.init();
   KeyboardNav.init();
