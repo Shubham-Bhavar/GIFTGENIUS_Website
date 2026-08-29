@@ -3278,3 +3278,88 @@ button { font-family: var(--font-sans); cursor: pointer; }
 .entry-scene-wrap {
   height: 400px !important;
 }
+/* ═══════════════════════════════════
+   GIFT FINDER — UX polish additions
+   (mobile touch targets, selected-state clarity, narrow-screen layout, focus rings)
+═══════════════════════════════════ */
+
+/* Larger, clearer touch target for the budget slider thumb */
+.gf-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 10px;
+  background: var(--cream-dark);
+}
+
+.gf-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--teal);
+  border: 3px solid var(--surface, #fff);
+  box-shadow: 0 2px 8px rgba(110, 198, 207, 0.4);
+  cursor: pointer;
+}
+
+.gf-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--teal);
+  border: 3px solid var(--surface, #fff);
+  box-shadow: 0 2px 8px rgba(110, 198, 207, 0.4);
+  cursor: pointer;
+  border: none;
+}
+
+/* Unambiguous selected-state indicator, not just color */
+.gf-option {
+  position: relative;
+}
+
+.gf-option.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  background: var(--teal);
+  color: #fff;
+  border-radius: 50%;
+}
+
+/* Focus rings for nav buttons (options already had focus-visible) */
+.gf-btn-continue:focus-visible,
+.gf-btn-back:focus-visible,
+.gf-btn-done:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+/* Heading focus target shouldn't show a visible outline (focused programmatically, not by tabbing) */
+.gf-title:focus,
+.gf-confirmation-title:focus {
+  outline: none;
+}
+
+/* Very narrow screens: single-column options, stacked nav buttons */
+@media (max-width: 360px) {
+  .gf-options,
+  .gf-options--interests {
+    grid-template-columns: 1fr;
+  }
+
+  .gf-nav {
+    flex-direction: column;
+  }
+
+  .gf-btn-back {
+    order: 2;
+  }
+}
