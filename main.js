@@ -634,48 +634,51 @@ const Sort = (() => {
 /* ═══════════════════════════════════
    QUICK VIEW MODAL
 ═══════════════════════════════════ */
+/* ═══════════════════════════════════
+   QUICKVIEW — reads from products.js PRODUCTS array.
+   No local data copy. getProductById() is the
+   single source of truth.
+═══════════════════════════════════ */
 const QuickView = (() => {
-  const overlay   = document.getElementById('modalOverlay');
-  const modal     = document.getElementById('quickviewModal');
-  const closeBtn  = document.getElementById('modalClose');
-  const content   = document.getElementById('modalContent');
+  const overlay  = document.getElementById('modalOverlay');
+  const modal    = document.getElementById('quickviewModal');
+  const closeBtn = document.getElementById('modalClose');
+  const content  = document.getElementById('modalContent');
 
-  // Product data map (keyed by data-id on .quickview-btn)
-  const products = {
-    1: { name: 'Luxury Hamper Box', cat: 'Gift Sets', price: '₹499', og: '₹699', rating: '4.9 ★ (182)', img: 'https://t4.ftcdn.net/jpg/05/32/64/27/240_F_532642742_3lStpC5P0U4FrndE82prkwm61F5OnQgj.jpg', desc: 'A beautifully curated hamper packed with premium goodies — perfect for any celebration.' },
-    2: { name: 'Engraved Timepiece', cat: 'Accessories', price: '₹1,299', og: '₹1,699', rating: '4.8 ★ (94)', img: 'https://etchcraftemporium.in/cdn/shop/files/ChatGPT_Image_Aug_14_2025_07_16_41_PM.png?v=1755179225&width=800', desc: 'A timeless watch with custom engraving — the gift that tells time and stories.' },
-    3: { name: 'Classic Rose Bouquet', cat: 'Flowers', price: '₹599', og: '₹799', rating: '4.6 ★ (310)', img: 'https://www.uflowershop.com/1294-large_default/valentine-s-day-classic-red-rose-bouquet.webp', desc: 'Fresh red roses arranged by expert florists — delivered same day in Mumbai.' },
-    4: { name: 'Signature Perfume', cat: 'Fragrance', price: '₹1,199', og: '₹1,499', rating: '4.9 ★ (218)', img: 'https://images.stockcake.com/public/e/b/3/eb3d9618-4d24-4f60-bf9c-17168329eb84_large/elegant-perfume-bottle-stockcake.jpg', desc: 'A sophisticated fragrance crafted to leave a lasting impression — luxury in a bottle.' },
-  };
-
-  // Build and open the quick-view modal for a given product id
+  // Build and open the quick-view modal for a given product id.
+  // Reads directly from PRODUCTS via getProductById() — no local data copy.
   function openModal(id) {
-    const p = products[id];
+    const p = getProductById(id);   // from products.js
     if (!p || !content) return;
 
-    // Build content safely (no innerHTML)
     content.innerHTML = '';
-    const imgDiv   = el('div', { class: 'modal-img' }, [
-      el('img', { src: p.img, alt: p.name, loading: 'lazy' })
-    ]);
-    const infoDiv  = el('div', { class: 'modal-info' }, [
-      el('p', { class: 'modal-cat' }, [p.cat]),
-      el('h3', { class: 'modal-name' }, [p.name]),
-      el('p', { class: 'modal-rating' }, ['★ ' + p.rating]),
-      el('div', { class: 'modal-price' }, [
-        el('span', { class: 'price-og' }, [p.og]),
-        document.createTextNode(p.price)
-      ]),
-      el('p', { class: 'modal-desc' }, [p.desc]),
+
+    // ── Left: product image ──────────────────────────────
+    const imgDiv = el('div', { class: 'modal-img' }, [
+      el('img', { src: p.image, alt: p.alt, loading: 'lazy' })
     ]);
 
-    // Numeric price extraction for Add to Cart
-    const numericPrice = p.price.replace(/[^\d]/g, '');
-    const addBtn = el('button', { class: 'btn-primary', style: 'width:100%' }, ['Add to Cart →']);
+    // ── Right: product info ──────────────────────────────
+    const infoChildren = [
+      el('p',  { class: 'modal-cat'    }, [p.category]),
+      el('h3', { class: 'modal-name'   }, [p.name]),
+      el('p',  { class: 'modal-rating' }, ['★ ' + p.rating + ' (' + p.reviewCount + ' reviews)']),
+      el('div', { class: 'modal-price' }, [
+        el('span', { class: 'price-og'  }, ['₹' + p.originalPrice.toLocaleString('en-IN')]),
+        document.createTextNode(' ₹' + p.price.toLocaleString('en-IN'))
+      ]),
+      el('p', { class: 'modal-desc' }, [p.description]),
+    ];
+
+    // Add to Cart button
+    const addBtn = el('button', { class: 'btn-primary', style: 'width:100%;margin-top:12px' }, ['Add to Cart →']);
     addBtn.addEventListener('click', () => {
-      Cart.addItem(p.name, numericPrice, p.img);
+      Cart.addItem(p.name, p.price, p.image);
       closeModal();
+      Toast.show('Added to cart! 🛒');
     });
+
+    const infoDiv = el('div', { class: 'modal-info' }, infoChildren);
     infoDiv.appendChild(addBtn);
 
     content.appendChild(imgDiv);
@@ -689,7 +692,6 @@ const QuickView = (() => {
     document.body.style.overflow = 'hidden';
   }
 
-  // Close the quick-view modal
   function closeModal() {
     overlay?.classList.remove('open');
     overlay?.setAttribute('aria-hidden', 'true');
@@ -698,14 +700,19 @@ const QuickView = (() => {
     document.body.style.overflow = '';
   }
 
-  // Wire up quick-view triggers and close events
   function init() {
-    document.querySelectorAll('.quickview-btn').forEach(btn => {
-      btn.addEventListener('click', e => {
+    // Wire every .quickview-btn that exists in the DOM at init time.
+    // ProductDisplay re-renders cards, so we use event delegation on the grid
+    // to also catch buttons on cards rendered after init.
+    const grid = document.getElementById('productGrid');
+    if (grid) {
+      grid.addEventListener('click', e => {
+        const btn = e.target.closest('.quickview-btn');
+        if (!btn) return;
         e.stopPropagation();
         openModal(btn.dataset.id);
       });
-    });
+    }
 
     closeBtn?.addEventListener('click', closeModal);
     overlay?.addEventListener('click', closeModal);
@@ -715,7 +722,7 @@ const QuickView = (() => {
     });
   }
 
-  return { init };
+  return { init, openModal };
 })();
 /* ═══════════════════════════════════
    GIFT FINDER — AI-style consultation modal
