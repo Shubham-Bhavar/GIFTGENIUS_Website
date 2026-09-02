@@ -1,271 +1,524 @@
 /**
- * GiftGenius - products.js
- * Centralized MVP product catalog.
+ * GiftGenius — products.js
+ * Centralized product data — the ONLY place product info should live.
  *
- * This file is the source of truth for product information. The extra
- * metadata fields are intentionally simple so the next phase can build a
- * rule-based recommendation engine without changing the UI first.
+ * FIELD GUIDE (for the recommendation engine):
+ *
+ * id            — unique number
+ * name          — display name
+ * category      — matches GiftFinder INTERESTS values (lowercase)
+ *                 "flowers" | "fragrance" | "accessories" | "gift sets"
+ *                 | "personalized" | "food & sweets" | "experience"
+ *                 | "cultural" | "wellness" | "home decor"
+ * price         — sale price in ₹ (number)
+ * originalPrice — crossed-out price in ₹ (number)
+ * rating        — 4.0–5.0
+ * reviewCount   — number
+ * starsDisplay  — "★★★★★" or "★★★★☆"
+ * image         — CDN URL
+ * alt           — image alt text
+ * badge         — { text, className }
+ *                 className: pbadge--bestseller | pbadge--new | pbadge--sale | pbadge--rated
+ * tags          — array used by FilterPills on homepage
+ *                 values: "for-her" | "for-him" | "premium" | "budget" | "personalized"
+ * occasion      — array matching GiftFinder OCCASIONS values
+ *                 "birthday" | "anniversary" | "festival" | "graduation" | "valentine"
+ * forWhom       — array: "her" | "him" | "both"
+ * personality   — array: "introvert" | "extrovert" | "minimalist" | "expressive" | "creative" | "practical"
+ * relationship  — array: "friend" | "partner" | "parent" | "sibling" | "colleague" | "self"
+ * description   — one-line product description (used in Quick View and recommendation explanation)
+ * isCultural    — boolean, true for CultureConnect products
+ * isFestival    — boolean, true for Festival Special products
  */
 
 'use strict';
 
 const PRODUCTS = [
+
+  /* ─── 1 ─── */
   {
     id: 1,
-    slug: "luxury-hamper-box",
     name: "Luxury Hamper Box",
-    category: "Gift Sets",
+    category: "gift sets",
     price: 499,
     originalPrice: 699,
     rating: 4.9,
     reviewCount: 182,
-    starsDisplay: "&#9733;&#9733;&#9733;&#9733;&#9733;",
+    starsDisplay: "★★★★★",
     image: "https://t4.ftcdn.net/jpg/05/32/64/27/240_F_532642742_3lStpC5P0U4FrndE82prkwm61F5OnQgj.jpg",
     alt: "Luxury gift hamper box with curated items",
     badge: { text: "Bestseller", className: "pbadge--bestseller" },
-    tags: ["for-her", "for-him", "budget", "premium"],
-    occasion: ["birthday", "anniversary", "festival", "thank-you"],
-    forWhom: ["her", "him", "friend", "family", "colleague"],
-    interests: ["gourmet", "self-care", "celebration", "surprise"],
-    personality: ["thoughtful", "classic", "warm"],
-    giftType: "curated-hamper",
-    budgetTier: "budget",
-    cultureTags: [],
-    festivalTags: ["diwali", "raksha-bandhan"],
-    description: "A ready-to-gift hamper with assorted treats and a premium presentation box.",
-    recommendationReasons: [
-      "Works well when you want a safe, polished gift for many occasions.",
-      "Good fit for recipients who enjoy curated surprises."
-    ]
+    tags: ["for-her", "for-him", "premium"],
+    occasion: ["birthday", "anniversary", "festival"],
+    forWhom: ["her", "him"],
+    personality: ["expressive", "extrovert"],
+    relationship: ["partner", "parent", "friend"],
+    description: "A beautifully curated hamper packed with premium goodies — perfect for any celebration.",
+    isCultural: false,
+    isFestival: false
   },
+
+  /* ─── 2 ─── */
   {
     id: 2,
-    slug: "engraved-timepiece",
     name: "Engraved Timepiece",
-    category: "Accessories",
+    category: "accessories",
     price: 1299,
     originalPrice: 1699,
     rating: 4.8,
     reviewCount: 94,
-    starsDisplay: "&#9733;&#9733;&#9733;&#9733;&#9733;",
+    starsDisplay: "★★★★★",
     image: "https://etchcraftemporium.in/cdn/shop/files/ChatGPT_Image_Aug_14_2025_07_16_41_PM.png?v=1755179225&width=800",
     alt: "Elegant engraved timepiece watch gift",
     badge: { text: "New", className: "pbadge--new" },
     tags: ["for-him", "premium", "personalized"],
-    occasion: ["birthday", "anniversary", "graduation", "promotion"],
-    forWhom: ["him", "partner", "father", "colleague"],
-    interests: ["accessories", "fashion", "personalized", "professional"],
-    personality: ["elegant", "practical", "sentimental"],
-    giftType: "personalized-accessory",
-    budgetTier: "mid-range",
-    cultureTags: [],
-    festivalTags: [],
-    description: "A refined watch that can carry a personal engraved message.",
-    recommendationReasons: [
-      "Strong choice for milestone occasions where a keepsake matters.",
-      "Personalization makes the gift feel more intentional."
-    ]
+    occasion: ["birthday", "anniversary", "graduation"],
+    forWhom: ["him"],
+    personality: ["minimalist", "practical"],
+    relationship: ["partner", "parent", "sibling"],
+    description: "A timeless watch with custom engraving — the gift that tells time and stories.",
+    isCultural: false,
+    isFestival: false
   },
+
+  /* ─── 3 ─── */
   {
     id: 3,
-    slug: "classic-rose-bouquet",
     name: "Classic Rose Bouquet",
-    category: "Flowers",
+    category: "flowers",
     price: 599,
     originalPrice: 799,
     rating: 4.6,
     reviewCount: 310,
-    starsDisplay: "&#9733;&#9733;&#9733;&#9733;&#9734;",
+    starsDisplay: "★★★★☆",
     image: "https://www.uflowershop.com/1294-large_default/valentine-s-day-classic-red-rose-bouquet.webp",
     alt: "Classic red rose bouquet for gifting",
     badge: { text: "Sale", className: "pbadge--sale" },
     tags: ["for-her", "budget"],
-    occasion: ["valentine", "anniversary", "birthday", "apology"],
-    forWhom: ["her", "partner", "mother", "friend"],
-    interests: ["flowers", "romance", "decor", "classic-gifts"],
-    personality: ["romantic", "classic", "expressive"],
-    giftType: "fresh-flowers",
-    budgetTier: "budget",
-    cultureTags: [],
-    festivalTags: [],
-    description: "Fresh red roses arranged for romantic and heartfelt moments.",
-    recommendationReasons: [
-      "Best for emotional occasions where the message matters more than utility.",
-      "A familiar gift that feels warm and expressive."
-    ]
+    occasion: ["valentine", "anniversary", "birthday"],
+    forWhom: ["her"],
+    personality: ["expressive", "extrovert"],
+    relationship: ["partner", "friend"],
+    description: "Fresh red roses arranged by expert florists — delivered same day in Mumbai.",
+    isCultural: false,
+    isFestival: false
   },
+
+  /* ─── 4 ─── */
   {
     id: 4,
-    slug: "signature-perfume",
     name: "Signature Perfume",
-    category: "Fragrance",
+    category: "fragrance",
     price: 1199,
     originalPrice: 1499,
     rating: 4.9,
     reviewCount: 218,
-    starsDisplay: "&#9733;&#9733;&#9733;&#9733;&#9733;",
+    starsDisplay: "★★★★★",
     image: "https://images.stockcake.com/public/e/b/3/eb3d9618-4d24-4f60-bf9c-17168329eb84_large/elegant-perfume-bottle-stockcake.jpg",
     alt: "Elegant signature perfume bottle gift",
     badge: { text: "Top Rated", className: "pbadge--rated" },
     tags: ["for-her", "for-him", "premium"],
-    occasion: ["birthday", "anniversary", "valentine", "festive-party"],
-    forWhom: ["her", "him", "partner", "friend"],
-    interests: ["fragrance", "fashion", "self-care", "luxury"],
-    personality: ["stylish", "confident", "premium"],
-    giftType: "fragrance",
-    budgetTier: "mid-range",
-    cultureTags: [],
-    festivalTags: [],
-    description: "A sophisticated fragrance for someone who enjoys polished personal style.",
-    recommendationReasons: [
-      "Matches recipients who enjoy fashion, grooming, and self-care.",
-      "Feels premium without moving into an expensive luxury budget."
-    ]
+    occasion: ["birthday", "valentine", "anniversary"],
+    forWhom: ["her", "him"],
+    personality: ["expressive", "minimalist"],
+    relationship: ["partner", "friend", "sibling"],
+    description: "A sophisticated fragrance crafted to leave a lasting impression — luxury in a bottle.",
+    isCultural: false,
+    isFestival: false
   },
+
+  /* ─── 5 ─── */
   {
     id: 5,
-    slug: "artisan-diya-set",
-    name: "Artisan Diya Set",
-    category: "Home Decor",
+    name: "Personalised Memory Journal",
+    category: "personalized",
+    price: 349,
+    originalPrice: 499,
+    rating: 4.7,
+    reviewCount: 143,
+    starsDisplay: "★★★★☆",
+    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80",
+    alt: "Personalised leather journal with custom name",
+    badge: { text: "Sale", className: "pbadge--sale" },
+    tags: ["for-her", "for-him", "personalized", "budget"],
+    occasion: ["birthday", "graduation", "anniversary"],
+    forWhom: ["her", "him"],
+    personality: ["introvert", "creative", "minimalist"],
+    relationship: ["friend", "sibling", "partner"],
+    description: "A custom-name embossed leather journal — perfect for the thinker, writer, or dreamer.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 6 ─── */
+  {
+    id: 6,
+    name: "Artisan Chocolate Box",
+    category: "food & sweets",
+    price: 299,
+    originalPrice: 399,
+    rating: 4.8,
+    reviewCount: 276,
+    starsDisplay: "★★★★★",
+    image: "https://images.unsplash.com/photo-1548907040-4baa42d10919?w=400&q=80",
+    alt: "Luxury artisan chocolate box assortment",
+    badge: { text: "Bestseller", className: "pbadge--bestseller" },
+    tags: ["for-her", "for-him", "budget"],
+    occasion: ["birthday", "valentine", "festival"],
+    forWhom: ["her", "him"],
+    personality: ["extrovert", "expressive", "practical"],
+    relationship: ["friend", "colleague", "sibling", "parent"],
+    description: "Handcrafted Belgian chocolates in an elegant box — a crowd-pleasing delight for all ages.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 7 ─── */
+  {
+    id: 7,
+    name: "Pashmina Shawl",
+    category: "accessories",
     price: 899,
     originalPrice: 1199,
     rating: 4.7,
-    reviewCount: 76,
-    starsDisplay: "&#9733;&#9733;&#9733;&#9733;&#9734;",
-    image: "https://images.unsplash.com/photo-1605292356183-a77d0a9c9d1d?auto=format&fit=crop&w=900&q=80",
-    alt: "Decorative artisan diya set for festive gifting",
-    badge: { text: "Festival", className: "pbadge--sale" },
-    tags: ["for-her", "for-him", "budget", "festival"],
-    occasion: ["festival", "housewarming", "diwali"],
-    forWhom: ["family", "mother", "father", "friend", "colleague"],
-    interests: ["home-decor", "traditional", "festival", "handmade"],
-    personality: ["traditional", "warm", "family-oriented"],
-    giftType: "festival-decor",
-    budgetTier: "budget",
-    cultureTags: ["indian", "traditional", "handcrafted"],
-    festivalTags: ["diwali"],
-    description: "A decorative diya set suited for festive homes and traditional gifting.",
-    recommendationReasons: [
-      "Useful for festival gifting when the recipient values tradition.",
-      "Adds a CultureConnect-friendly product to the catalog."
-    ]
+    reviewCount: 88,
+    starsDisplay: "★★★★☆",
+    image: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400&q=80",
+    alt: "Soft pashmina shawl gift for women",
+    badge: { text: "Sale", className: "pbadge--sale" },
+    tags: ["for-her", "premium"],
+    occasion: ["birthday", "anniversary", "festival"],
+    forWhom: ["her"],
+    personality: ["minimalist", "practical", "introvert"],
+    relationship: ["mother", "parent", "partner", "sibling"],
+    description: "A buttery-soft pure pashmina shawl — a timeless, elegant gift for the women in your life.",
+    isCultural: false,
+    isFestival: false
   },
-  {
-    id: 6,
-    slug: "personalized-photo-frame",
-    name: "Personalized Photo Frame",
-    category: "Personalized",
-    price: 799,
-    originalPrice: 999,
-    rating: 4.8,
-    reviewCount: 128,
-    starsDisplay: "&#9733;&#9733;&#9733;&#9733;&#9733;",
-    image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=900&q=80",
-    alt: "Personalized photo frame displayed on a shelf",
-    badge: { text: "Personalized", className: "pbadge--new" },
-    tags: ["for-her", "for-him", "budget", "personalized"],
-    occasion: ["birthday", "anniversary", "farewell", "friendship"],
-    forWhom: ["partner", "friend", "family", "mother", "father"],
-    interests: ["memories", "personalized", "home-decor", "sentimental"],
-    personality: ["sentimental", "thoughtful", "creative"],
-    giftType: "personalized-keepsake",
-    budgetTier: "budget",
-    cultureTags: [],
-    festivalTags: [],
-    description: "A custom photo frame for preserving a shared memory.",
-    recommendationReasons: [
-      "Great when the relationship is personal and memory-driven.",
-      "Affordable personalized option for birthdays and anniversaries."
-    ]
-  },
-  {
-    id: 7,
-    slug: "premium-chocolate-box",
-    name: "Premium Chocolate Box",
-    category: "Gourmet",
-    price: 1499,
-    originalPrice: 1899,
-    rating: 4.9,
-    reviewCount: 156,
-    starsDisplay: "&#9733;&#9733;&#9733;&#9733;&#9733;",
-    image: "https://images.unsplash.com/photo-1549007953-2f2dc0b24019?auto=format&fit=crop&w=900&q=80",
-    alt: "Premium assorted chocolate box",
-    badge: { text: "Premium", className: "pbadge--rated" },
-    tags: ["for-her", "for-him", "premium"],
-    occasion: ["birthday", "anniversary", "thank-you", "festival"],
-    forWhom: ["friend", "partner", "family", "colleague"],
-    interests: ["gourmet", "chocolate", "food", "celebration"],
-    personality: ["warm", "social", "indulgent"],
-    giftType: "gourmet",
-    budgetTier: "mid-range",
-    cultureTags: [],
-    festivalTags: ["diwali", "christmas"],
-    description: "A premium assorted chocolate box for sweet celebrations.",
-    recommendationReasons: [
-      "Easy match for food lovers and celebratory gifting.",
-      "Suitable for both personal and professional relationships."
-    ]
-  },
+
+  /* ─── 8 ─── */
   {
     id: 8,
-    slug: "desk-plant-set",
-    name: "Desk Plant Set",
-    category: "Plants",
+    name: "Succulent Plant Gift Set",
+    category: "home decor",
+    price: 449,
+    originalPrice: 599,
+    rating: 4.5,
+    reviewCount: 192,
+    starsDisplay: "★★★★☆",
+    image: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=400&q=80",
+    alt: "Succulent plant set in gift box",
+    badge: { text: "New", className: "pbadge--new" },
+    tags: ["for-her", "for-him", "budget"],
+    occasion: ["birthday", "graduation", "anniversary"],
+    forWhom: ["her", "him"],
+    personality: ["introvert", "creative", "minimalist"],
+    relationship: ["friend", "colleague", "sibling"],
+    description: "A charming set of low-maintenance succulents — a living, growing reminder of your care.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 9 ─── */
+  {
+    id: 9,
+    name: "Customised Star Map Print",
+    category: "personalized",
+    price: 799,
+    originalPrice: 999,
+    rating: 4.9,
+    reviewCount: 127,
+    starsDisplay: "★★★★★",
+    image: "https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?w=400&q=80",
+    alt: "Personalised star map print of a special night",
+    badge: { text: "Top Rated", className: "pbadge--rated" },
+    tags: ["for-her", "for-him", "personalized", "premium"],
+    occasion: ["anniversary", "valentine", "birthday"],
+    forWhom: ["her", "him"],
+    personality: ["creative", "expressive", "introvert"],
+    relationship: ["partner", "friend"],
+    description: "A framed print of the night sky on your most special date — a deeply personal, one-of-a-kind gift.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 10 ─── */
+  {
+    id: 10,
+    name: "Luxury Spa Gift Set",
+    category: "wellness",
+    price: 1099,
+    originalPrice: 1499,
+    rating: 4.8,
+    reviewCount: 201,
+    starsDisplay: "★★★★★",
+    image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400&q=80",
+    alt: "Luxury spa and self-care gift set",
+    badge: { text: "Bestseller", className: "pbadge--bestseller" },
+    tags: ["for-her", "premium"],
+    occasion: ["birthday", "anniversary", "valentine"],
+    forWhom: ["her"],
+    personality: ["introvert", "minimalist", "expressive"],
+    relationship: ["partner", "friend", "sibling", "parent"],
+    description: "Bath salts, essential oils, and face masks in an elegant box — the ultimate self-care collection.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 11 ─── */
+  {
+    id: 11,
+    name: "Wireless Earbuds Premium",
+    category: "accessories",
+    price: 1999,
+    originalPrice: 2499,
+    rating: 4.7,
+    reviewCount: 156,
+    starsDisplay: "★★★★☆",
+    image: "https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=400&q=80",
+    alt: "Premium wireless earbuds in charging case",
+    badge: { text: "New", className: "pbadge--new" },
+    tags: ["for-him", "for-her", "premium"],
+    occasion: ["birthday", "graduation", "anniversary"],
+    forWhom: ["him", "her"],
+    personality: ["practical", "extrovert", "minimalist"],
+    relationship: ["sibling", "friend", "partner"],
+    description: "Crystal-clear sound, active noise cancellation — a gift for the music lover and the focused worker.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 12 ─── */
+  {
+    id: 12,
+    name: "Handmade Warli Art Frame",
+    category: "cultural",
+    price: 649,
+    originalPrice: 899,
+    rating: 4.8,
+    reviewCount: 73,
+    starsDisplay: "★★★★★",
+    image: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=400&q=80",
+    alt: "Handmade Warli tribal art painting in frame",
+    badge: { text: "Bestseller", className: "pbadge--bestseller" },
+    tags: ["for-her", "for-him", "personalized"],
+    occasion: ["birthday", "anniversary", "festival"],
+    forWhom: ["her", "him"],
+    personality: ["creative", "introvert", "expressive"],
+    relationship: ["parent", "friend", "partner"],
+    description: "Authentic hand-painted Warli art from Maharashtra tribal artists — culture, heritage, and beauty in one frame.",
+    isCultural: true,
+    isFestival: false
+  },
+
+  /* ─── 13 ─── */
+  {
+    id: 13,
+    name: "Diwali Premium Sweets Box",
+    category: "food & sweets",
+    price: 799,
+    originalPrice: 999,
+    rating: 4.9,
+    reviewCount: 341,
+    starsDisplay: "★★★★★",
+    image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80",
+    alt: "Premium Diwali sweets and dry fruits gift box",
+    badge: { text: "Bestseller", className: "pbadge--bestseller" },
+    tags: ["for-her", "for-him", "premium"],
+    occasion: ["festival"],
+    forWhom: ["her", "him"],
+    personality: ["extrovert", "expressive", "practical"],
+    relationship: ["parent", "colleague", "friend", "partner"],
+    description: "A royal box of premium mithai, dry fruits, and handmade chocolates — the perfect Diwali gift.",
+    isCultural: false,
+    isFestival: true
+  },
+
+  /* ─── 14 ─── */
+  {
+    id: 14,
+    name: "Rakhi Special Gift Combo",
+    category: "gift sets",
+    price: 499,
+    originalPrice: 699,
+    rating: 4.7,
+    reviewCount: 189,
+    starsDisplay: "★★★★☆",
+    image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400&q=80",
+    alt: "Raksha Bandhan special gift combo box",
+    badge: { text: "Sale", className: "pbadge--sale" },
+    tags: ["for-him", "budget"],
+    occasion: ["festival", "birthday"],
+    forWhom: ["him"],
+    personality: ["practical", "extrovert"],
+    relationship: ["sibling"],
+    description: "A thoughtfully curated Rakhi combo with chocolates, dry fruits, and a personalised card for your brother.",
+    isCultural: false,
+    isFestival: true
+  },
+
+  /* ─── 15 ─── */
+  {
+    id: 15,
+    name: "Leather Wallet & Card Holder",
+    category: "accessories",
+    price: 749,
+    originalPrice: 999,
+    rating: 4.6,
+    reviewCount: 112,
+    starsDisplay: "★★★★☆",
+    image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&q=80",
+    alt: "Premium leather wallet and card holder gift set",
+    badge: { text: "Sale", className: "pbadge--sale" },
+    tags: ["for-him", "premium"],
+    occasion: ["birthday", "graduation", "anniversary"],
+    forWhom: ["him"],
+    personality: ["minimalist", "practical"],
+    relationship: ["partner", "friend", "sibling", "parent"],
+    description: "Full-grain leather wallet with RFID protection and matching card holder — practical luxury for everyday life.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 16 ─── */
+  {
+    id: 16,
+    name: "Paithani Silk Bookmark Set",
+    category: "cultural",
+    price: 399,
+    originalPrice: 549,
+    rating: 4.6,
+    reviewCount: 47,
+    starsDisplay: "★★★★☆",
+    image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=400&q=80",
+    alt: "Paithani silk bookmarks from Maharashtra",
+    badge: { text: "New", className: "pbadge--new" },
+    tags: ["for-her", "budget", "personalized"],
+    occasion: ["birthday", "graduation", "festival"],
+    forWhom: ["her"],
+    personality: ["introvert", "creative", "minimalist"],
+    relationship: ["friend", "sibling", "colleague"],
+    description: "Handwoven Paithani silk bookmarks in traditional Maharashtra patterns — a cultural treasure in miniature.",
+    isCultural: true,
+    isFestival: false
+  },
+
+  /* ─── 17 ─── */
+  {
+    id: 17,
+    name: "Scented Candle Gift Set",
+    category: "wellness",
+    price: 549,
+    originalPrice: 749,
+    rating: 4.7,
+    reviewCount: 168,
+    starsDisplay: "★★★★☆",
+    image: "https://images.unsplash.com/photo-1602607248690-f4be4b8451c5?w=400&q=80",
+    alt: "Luxury scented candle gift set with three candles",
+    badge: { text: "Sale", className: "pbadge--sale" },
+    tags: ["for-her", "premium", "budget"],
+    occasion: ["birthday", "anniversary", "valentine"],
+    forWhom: ["her"],
+    personality: ["introvert", "minimalist", "expressive"],
+    relationship: ["friend", "partner", "sibling"],
+    description: "Three hand-poured soy wax candles in signature scents — for evenings that deserve to feel special.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 18 ─── */
+  {
+    id: 18,
+    name: "Graduation Memory Box",
+    category: "personalized",
+    price: 899,
+    originalPrice: 1199,
+    rating: 4.8,
+    reviewCount: 91,
+    starsDisplay: "★★★★★",
+    image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&q=80",
+    alt: "Custom graduation memory box with photo frame",
+    badge: { text: "Top Rated", className: "pbadge--rated" },
+    tags: ["for-her", "for-him", "personalized", "premium"],
+    occasion: ["graduation", "birthday"],
+    forWhom: ["her", "him"],
+    personality: ["expressive", "creative", "extrovert"],
+    relationship: ["friend", "sibling", "partner"],
+    description: "A personalised keepsake box with photo frame and memory slots — celebrate their achievement in style.",
+    isCultural: false,
+    isFestival: false
+  },
+
+  /* ─── 19 ─── */
+  {
+    id: 19,
+    name: "Kolhapuri Craft Jewellery Box",
+    category: "cultural",
+    price: 849,
+    originalPrice: 1099,
+    rating: 4.8,
+    reviewCount: 62,
+    starsDisplay: "★★★★★",
+    image: "https://images.unsplash.com/photo-1599707367072-cd6ada2bc375?w=400&q=80",
+    alt: "Handcrafted Kolhapuri jewellery box with traditional design",
+    badge: { text: "Bestseller", className: "pbadge--bestseller" },
+    tags: ["for-her", "premium", "personalized"],
+    occasion: ["birthday", "anniversary", "festival"],
+    forWhom: ["her"],
+    personality: ["expressive", "creative", "extrovert"],
+    relationship: ["partner", "parent", "friend"],
+    description: "A hand-carved Kolhapuri leather jewellery box — exquisite craftsmanship from Maharashtra's artisans.",
+    isCultural: true,
+    isFestival: false
+  },
+
+  /* ─── 20 ─── */
+  {
+    id: 20,
+    name: "Couple Photo Book",
+    category: "personalized",
     price: 699,
     originalPrice: 899,
-    rating: 4.5,
-    reviewCount: 83,
-    starsDisplay: "&#9733;&#9733;&#9733;&#9733;&#9734;",
-    image: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=900&q=80",
-    alt: "Small indoor desk plant in a ceramic pot",
-    badge: { text: "Eco Pick", className: "pbadge--new" },
-    tags: ["for-her", "for-him", "budget"],
-    occasion: ["housewarming", "promotion", "thank-you", "birthday"],
-    forWhom: ["friend", "colleague", "family", "teacher"],
-    interests: ["plants", "home-decor", "wellness", "workspace"],
-    personality: ["calm", "practical", "nature-loving"],
-    giftType: "plant",
-    budgetTier: "budget",
-    cultureTags: [],
-    festivalTags: [],
-    description: "A compact indoor plant set for desks, shelves, and small spaces.",
-    recommendationReasons: [
-      "Good for recipients who like practical, calming gifts.",
-      "Works well for colleagues, teachers, and housewarming occasions."
-    ]
+    rating: 4.9,
+    reviewCount: 203,
+    starsDisplay: "★★★★★",
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80",
+    alt: "Personalised couple photo book album",
+    badge: { text: "Top Rated", className: "pbadge--rated" },
+    tags: ["for-her", "for-him", "personalized", "premium"],
+    occasion: ["anniversary", "valentine", "birthday"],
+    forWhom: ["her", "him"],
+    personality: ["expressive", "creative", "extrovert"],
+    relationship: ["partner"],
+    description: "A custom hardcover photo book filled with your shared memories — a gift that tells your story.",
+    isCultural: false,
+    isFestival: false
   }
+
 ];
 
-function getProductSearchText(product) {
-  return [
-    product.name,
-    product.category,
-    product.description,
-    product.giftType,
-    product.budgetTier,
-    ...product.tags,
-    ...product.occasion,
-    ...product.forWhom,
-    ...product.interests,
-    ...product.personality,
-    ...product.cultureTags,
-    ...product.festivalTags
-  ].join(' ').toLowerCase();
-}
-
-/**
- * Builds one .pcard element from a product object.
- * The original class names and data attributes are preserved so existing
- * main.js modules keep working while the product model becomes richer.
- */
+/* ═══════════════════════════════════════════════
+   CARD BUILDER
+   Generates one .pcard element from a product object.
+   Markup matches what main.js modules expect.
+═══════════════════════════════════════════════ */
 function buildProductCard(product) {
   const tagsAttr = product.tags.join(' ');
 
   return `
-    <article class="pcard" role="listitem" data-name="${product.name.toLowerCase()}" data-category="${product.category.toLowerCase()}" data-tags="${tagsAttr}" data-price="${product.price}" data-rating="${product.rating}" data-search="${getProductSearchText(product)}">
+    <article
+      class="pcard"
+      role="listitem"
+      data-id="${product.id}"
+      data-name="${product.name.toLowerCase()}"
+      data-category="${product.category.toLowerCase()}"
+      data-tags="${tagsAttr}"
+      data-price="${product.price}"
+      data-rating="${product.rating}"
+    >
       <div class="pcard-img">
         <span class="pbadge ${product.badge.className}">${product.badge.text}</span>
-        <button class="wish-btn" aria-label="Add ${product.name} to wishlist" aria-pressed="false">&#9825;</button>
+        <button class="wish-btn" aria-label="Add ${product.name} to wishlist" aria-pressed="false">🤍</button>
         <img src="${product.image}" alt="${product.alt}" loading="lazy">
         <button class="quickview-btn" data-id="${product.id}" aria-label="Quick view ${product.name}">Quick View</button>
       </div>
@@ -278,14 +531,17 @@ function buildProductCard(product) {
         </div>
         <div class="pcard-foot">
           <div class="pcard-price">
-            <span class="price-og"><span class="sr-only">Original price:</span>&#8377;${product.originalPrice.toLocaleString('en-IN')}</span>
-            <span class="price-now"><span class="sr-only">Sale price:</span>&#8377;${product.price.toLocaleString('en-IN')}</span>
+            <span class="price-og"><span class="sr-only">Original price:</span>₹${product.originalPrice.toLocaleString('en-IN')}</span>
+            <span class="price-now"><span class="sr-only">Sale price:</span>₹${product.price.toLocaleString('en-IN')}</span>
           </div>
-          <button class="add-btn"
+          <button
+            class="add-btn"
             data-name="${product.name}"
             data-price="${product.price}"
             data-img="${product.image}"
-            aria-label="Add ${product.name} to cart">
+            data-id="${product.id}"
+            aria-label="Add ${product.name} to cart"
+          >
             + Add
           </button>
         </div>
@@ -294,13 +550,23 @@ function buildProductCard(product) {
   `;
 }
 
-/**
- * Renders a list of products into #productGrid.
- * Must run before Wishlist.init(), AddToCart.init(), FilterPills.init(),
- * Sort.init(), QuickView.init(), and ScrollReveal.init().
- */
-function renderProducts(list = PRODUCTS) {
+/* ═══════════════════════════════════════════════
+   RENDER
+   Renders a product list into #productGrid.
+   Call this before main.js modules init.
+═══════════════════════════════════════════════ */
+function renderProducts(list) {
   const grid = document.getElementById('productGrid');
   if (!grid) return;
-  grid.innerHTML = list.map(buildProductCard).join('');
+  const items = list !== undefined ? list : PRODUCTS;
+  grid.innerHTML = items.map(buildProductCard).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   LOOKUP HELPER
+   Returns a product by id — used by QuickView
+   and product detail page.
+═══════════════════════════════════════════════ */
+function getProductById(id) {
+  return PRODUCTS.find(p => p.id === Number(id)) || null;
 }
