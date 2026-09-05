@@ -780,10 +780,15 @@ const GiftFinder = (() => {
 
   // Values match PRODUCTS[i].category (lowercased) exactly
   const INTERESTS = [
-    { value: 'flowers',     icon: '🌸', label: 'Flowers' },
-    { value: 'fragrance',   icon: '🌺', label: 'Fragrance' },
-    { value: 'accessories', icon: '⌚', label: 'Accessories' },
-    { value: 'gift sets',   icon: '🎁', label: 'Gift Sets' }
+    { value: 'flowers',      icon: '🌸', label: 'Flowers' },
+    { value: 'fragrance',    icon: '🌺', label: 'Fragrance' },
+    { value: 'accessories',  icon: '⌚', label: 'Accessories' },
+    { value: 'gift sets',    icon: '🎁', label: 'Gift Sets' },
+    { value: 'personalized', icon: '✍️', label: 'Personalized' },
+    { value: 'food & sweets',icon: '🍫', label: 'Food & Sweets' },
+    { value: 'wellness',     icon: '🧘', label: 'Wellness' },
+    { value: 'home decor',   icon: '🏡', label: 'Home Decor' },
+    { value: 'cultural',     icon: '🎨', label: 'Cultural' }
   ];
 
   const BUDGET_MIN = 500;
@@ -978,14 +983,141 @@ const GiftFinder = (() => {
   }
 
   // Neutral confirmation — explicitly no product results, no fake AI claims
-  function renderConfirmation() {
+    /* ─── RECOMMENDATION ENGINE ─────────────────────────
+     Scores every product in PRODUCTS[] against the
+     collected GiftFinderState and returns the top 4.
+
+     SCORING WEIGHTS:
+       Occasion match            → +30
+       Budget fits (price ≤ budget) → +25
+       Budget comfort (price ≤ 80% of budget) → +10 bonus
+       Recipient/relationship match → +20
+       Interest/category match   → +15 per match
+       Rating bonus              → (rating - 4.0) × 10, max +10
+  ─────────────────────────────────────────────────── */
+  function scoreProducts(state) {
+    return PRODUCTS.map(p => {
+      let score = 0;
+      const reasons = [];
+
+      // 1. Occasion match
+      if (state.occasion && p.occasion.includes(state.occasion)) {
+        score += 30;
+        reasons.push('Perfect for ' + state.occasion);
+      }
+
+      // 2. Budget match
+      if (state.budget > 0 && p.price <= state.budget) {
+        score += 25;
+        // Comfort bonus — well within budget
+        if (p.price <= state.budget * 0.8) {
+          score += 10;
+          reasons.push('Within your budget');
+        }
+      } else if (state.budget > 0) {
+        // Over budget — heavy penalty
+        score -= 40;
+      }
+
+      // 3. Recipient / relationship match
+      if (state.recipient && p.relationship && p.relationship.includes(state.recipient)) {
+        score += 20;
+        reasons.push('Great for a ' + state.recipient);
+      }
+
+      // 4. Interest / category match
+      if (state.interests && state.interests.length > 0) {
+        state.interests.forEach(interest => {
+          if (p.category === interest) {
+            score += 15;
+            reasons.push('Matches their interest');
+          }
+        });
+      }
+
+      // 5. Rating bonus
+      const ratingBonus = Math.min((p.rating - 4.0) * 10, 10);
+      score += ratingBonus;
+
+      return { product: p, score, reasons };
+    })
+    .filter(r => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+  }
+
+  // Fallback: return top-rated products when no strong matches exist
+  function getFallbackProducts() {
+    return [...PRODUCTS]
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 4)
+      .map(p => ({ product: p, score: 0, reasons: ['Top rated gift'] }));
+  }
+
+  // Build one result card HTML string
+  function renderResultCard(result) {
+    const p = result.product;
+    const reason = result.reasons[0] || 'Recommended for you';
+    const discount = Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100);
+
     return `
-      <div class="gf-confirmation">
-        <div class="gf-identity-name" style="justify-content:center"><span class="sparkle">✨</span> GIFTGENIUS AI</div>
-        <h2 class="gf-confirmation-title">Your gift profile is ready.</h2>
-        <p class="gf-confirmation-text">I've got everything I need.</p>
-        <p class="gf-confirmation-note">Your personalized gift recommendations will appear here once the recommendation engine is connected.</p>
-        <button type="button" class="gf-btn-done" id="gfDoneBtn">Done</button>
+      <div class="gf-result-card">
+        <div class="gf-result-img-wrap">
+          <img src="${p.image}" alt="${p.alt}" loading="lazy" class="gf-result-img">
+          ${discount > 0 ? `<span class="gf-result-badge">${discount}% off</span>` : ''}
+        </div>
+        <div class="gf-result-body">
+          <p class="gf-result-cat">${p.category}</p>
+          <h4 class="gf-result-name">${p.name}</h4>
+          <p class="gf-result-desc">${p.description}</p>
+          <div class="gf-result-reason">✨ ${reason}</div>
+          <div class="gf-result-foot">
+            <div class="gf-result-price">
+              <span class="gf-result-og">₹${p.originalPrice.toLocaleString('en-IN')}</span>
+              <span class="gf-result-now">₹${p.price.toLocaleString('en-IN')}</span>
+            </div>
+            <button
+              class="gf-result-add"
+              data-name="${p.name}"
+              data-price="${p.price}"
+              data-img="${p.image}"
+              data-id="${p.id}"
+            >+ Add</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Main results screen — runs engine, renders cards, wires Add buttons
+  function renderConfirmation() {
+    const state = getState();
+    let results = scoreProducts(state);
+    if (results.length === 0) results = getFallbackProducts();
+
+    const recipientLabel = state.recipient
+      ? RECIPIENTS.find(r => r.value === state.recipient)?.label || state.recipient
+      : 'them';
+    const occasionLabel = state.occasion
+      ? OCCASIONS.find(o => o.value === state.occasion)?.label || state.occasion
+      : 'this occasion';
+
+    return `
+      <div class="gf-results">
+        <div class="gf-results-header">
+          <div class="gf-identity-name" style="justify-content:center">
+            <span class="sparkle">✨</span> GIFTGENIUS AI
+          </div>
+          <h2 class="gf-results-title">Your top picks are ready</h2>
+          <p class="gf-results-sub">
+            ${results.length} gifts matched for your <strong>${recipientLabel}</strong>
+            on <strong>${occasionLabel}</strong> · Budget ₹${state.budget.toLocaleString('en-IN')}
+          </p>
+        </div>
+        <div class="gf-results-grid">
+          ${results.map(renderResultCard).join('')}
+        </div>
+        <button type="button" class="gf-btn-done" id="gfDoneBtn">Close</button>
       </div>
     `;
   }
@@ -1008,12 +1140,22 @@ const GiftFinder = (() => {
       return;
     }
 
-    if (phase === 'confirmation') {
+        if (phase === 'confirmation') {
       content.innerHTML = renderConfirmation();
-      focusHeading('.gf-confirmation-title');
+      focusHeading('.gf-results-title');
+
+      // Wire Add-to-Cart buttons on result cards
+      content.querySelectorAll('.gf-result-add').forEach(btn => {
+        btn.addEventListener('click', () => {
+          Cart.addItem(btn.dataset.name, Number(btn.dataset.price), btn.dataset.img);
+          btn.textContent = '✓ Added';
+          btn.disabled = true;
+          Toast.show(btn.dataset.name + ' added to cart! 🛒');
+        });
+      });
+
       document.getElementById('gfDoneBtn')?.addEventListener('click', () => {
         close();
-        Toast.show('✨ Got it! Your gift profile is ready.');
       });
       return;
     }
