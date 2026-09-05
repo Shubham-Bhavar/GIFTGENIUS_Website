@@ -137,7 +137,7 @@ const PRODUCTS = [
     rating: 4.7,
     reviewCount: 143,
     starsDisplay: "★★★★☆",
-    image: "https://images.unsplash.com/photo-1603484477859-abe6a73f9366?w=400&h=400&fit=crop&q=80",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYHMpPD82BbPD-XU5Sy5FkvJ18kjiHDYcGeAvo_ebW_Q&s=10",
     alt: "Open leather journal for writing",
     badge: { text: "Sale", className: "pbadge--sale" },
     tags: ["for-her", "for-him", "personalized", "budget"],
