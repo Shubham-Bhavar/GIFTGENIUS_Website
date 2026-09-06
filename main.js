@@ -1296,10 +1296,12 @@ const GiftFinder = (() => {
 
   function init() {
     const trigger = document.getElementById('giftFinderBtn');
-    trigger?.addEventListener('click', e => {
-      e.preventDefault();
-      open();
-    });
+trigger?.addEventListener('click', e => {
+  // If the button has a real href (not # ), let it navigate normally
+  if (trigger.getAttribute('href') && trigger.getAttribute('href') !== '#') return;
+  e.preventDefault();
+  open();
+});
 
     closeBtn?.addEventListener('click', close);
     overlay?.addEventListener('click', close);
